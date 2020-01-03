@@ -31,6 +31,8 @@ setup(name='btsf',
       install_requires = [
           "attrs",
       ],
+      test_suite = 'nose.collector',
+      tests_require = ['nose'],
       keywords = 'Binary Time Series File Storage',
       classifiers = [
           'Development Status :: 4 - Beta',

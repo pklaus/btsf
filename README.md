@@ -58,5 +58,4 @@ with BinaryTimeSeriesFile.create('test.btsf', metrics) as f:
     f.log_new_samples(1.1, 2.2, 0xf0f0f0f0f0f0f0f0, 1)
     f.log_new_samples(3.3, 4.4, 0xffffffffffffffff, 2)
     f.log_new_samples(5.0, 1.0, 0x123456789ABCDEF1, 3)
-    f.close()
 ```
