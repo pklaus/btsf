@@ -70,8 +70,11 @@ class BinaryTimeSeriesFile():
         #size, = struct.unpack('<Q', f._fd.read(8))
         #annotations = json.load(f._fd.read(size).decode('utf-8'))
         #f._fd.seek((-size % BinaryTimeSeriesFile.HEADER_PADDING, 1)
+        metrics = [Metric(**m) for m in header['metrics']]
+        for m in metrics:
+            m.type = Type(m.type)
 
-        f._metrics = [Metric(**m) for m in header['metrics']]
+        f._metrics = metrics
         f._struct_format = header['struct_format']
         f._byte_order = header['byte_order']
         f._pad_to = header['pad_to']

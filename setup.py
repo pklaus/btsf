@@ -20,7 +20,7 @@ setup(name='btsf',
       url = 'https://github.com/pklaus/btsf',
       license = 'GPL',
       #packages = ['',],
-      py_modules = ['btfs',],
+      py_modules = ['btsf',],
       entry_points = {
           'console_scripts': [
               #'btfs = btfs:main',
