@@ -23,7 +23,7 @@ setup(name='btsf',
       py_modules = ['btsf',],
       entry_points = {
           'console_scripts': [
-              #'btfs = btfs:main',
+              'btsf = btsf:main',
           ],
       },
       zip_safe = True,

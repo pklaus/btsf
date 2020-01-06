@@ -79,6 +79,7 @@ class BinaryTimeSeriesFile():
         f._byte_order = header['byte_order']
         f._pad_to = header['pad_to']
         f._struct_size = header['struct_size']
+        f._data_offset = f._fd.tell()
 
         return f
 
@@ -102,6 +103,7 @@ class BinaryTimeSeriesFile():
 
         f._fd = open(filename, 'wb')
         f._write_header()
+        f._data_offset = f._fd.tell()
         return f
 
     def _write_header(self):
@@ -122,11 +124,34 @@ class BinaryTimeSeriesFile():
     def log_new_samples(self, *values):
         self._fd.write(struct.pack(self._struct_format, *values))
 
+    def read_last(self):
+        if self.n_entries() == 0:
+            raise EOFError()
+        self._fd.seek(-self._struct_size, 2)    # SEEK_END
+        return self.read()
+
     def read(self):
         data = self._fd.read(self._struct_size)
         if len(data) == 0:
             raise EOFError()
         return struct.unpack(self._struct_format, data)
+
+    def read_all(self):
+        data = self._fd.read(self._struct_size)
+        while len(data) == self._struct_size:
+            yield struct.unpack(self._struct_format, data)
+            data = self._fd.read(self._struct_size)
+
+    def n_entries(self):
+        current_pos = self._fd.tell()
+        start = self._data_offset
+        self.seekend()
+        end = self._fd.tell()
+        self._fd.seek(current_pos)
+        n_data_bytes = end - start
+
+        assert n_data_bytes % self._struct_size == 0
+        return n_data_bytes // self._struct_size
 
     def flush(self):
         self._fd.flush()
@@ -140,3 +165,12 @@ class BinaryTimeSeriesFile():
 
     def __exit__(self, type_, value, tb):
         self.close()
+
+def main():
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('btsf_file')
+    args = parser.parse_args()
+    with BinaryTimeSeriesFile.openread(args.btsf_file) as f:
+        print(f"{args.btsf_file} - Number of entries: {f.n_entries()}")
+        print(f"First entry: {f.read_last()}")
