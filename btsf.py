@@ -107,6 +107,10 @@ class BinaryTimeSeriesFile():
         f._data_offset = f._fd.tell()
         return f
 
+    @property
+    def metrics(self):
+        return self._metrics
+
     def _write_header(self):
         self._fd.write(self.FILE_SIGNATURE)
         header = json.dumps({
@@ -126,7 +130,7 @@ class BinaryTimeSeriesFile():
         self._fd.write(struct.pack(self._struct_format, *values))
 
     def read_last(self):
-        if self.n_entries() == 0:
+        if self.n_entries == 0:
             raise EOFError()
         self._fd.seek(-self._struct_size, 2)    # SEEK_END
         return self.read()
@@ -143,6 +147,7 @@ class BinaryTimeSeriesFile():
             yield struct.unpack(self._struct_format, data)
             data = self._fd.read(self._struct_size)
 
+    @property
     def n_entries(self):
         current_pos = self._fd.tell()
         start = self._data_offset
