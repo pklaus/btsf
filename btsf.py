@@ -63,7 +63,8 @@ class BinaryTimeSeriesFile():
     def _open(filename, mode):
         f = BinaryTimeSeriesFile(filename)
         f._fd = open(filename, mode)
-        f._fd.seek(32, 0)
+        if not f._fd.read(32).startswith(BinaryTimeSeriesFile.FILE_SIGNATURE):
+            raise UnknownFileError("File doesn't start with btsf file signature")
         size, = struct.unpack('<Q', f._fd.read(8))
         header = json.loads(f._fd.read(size).decode('utf-8'))
         f._fd.seek(-size % BinaryTimeSeriesFile.HEADER_PADDING, 1)
@@ -165,6 +166,9 @@ class BinaryTimeSeriesFile():
 
     def __exit__(self, type_, value, tb):
         self.close()
+
+class UnknownFileError(NameError):
+    pass
 
 def main():
     import argparse
