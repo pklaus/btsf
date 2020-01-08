@@ -147,6 +147,10 @@ class BinaryTimeSeriesFile():
             yield struct.unpack(self._struct_format, data)
             data = self._fd.read(self._struct_size)
 
+    def goto_entry(self, entry=0):
+        assert entry < self.n_entries
+        self._fd.seek(self._data_offset + entry * self._struct_size)
+
     @property
     def n_entries(self):
         current_pos = self._fd.tell()
