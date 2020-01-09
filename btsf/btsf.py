@@ -127,13 +127,13 @@ class BinaryTimeSeriesFile():
     def append(self, *values):
         self._fd.write(struct.pack(self._struct_format, *values))
 
-    def read_first(self):
+    def first(self):
         if self.n_entries == 0:
             raise EmptyBtsfError()
         self._fd.seek(self._data_offset)
         return next(self)
 
-    def read_last(self):
+    def last(self):
         if self.n_entries == 0:
             raise EmptyBtsfError()
         self._fd.seek(-self._struct_size, 2)    # SEEK_END
