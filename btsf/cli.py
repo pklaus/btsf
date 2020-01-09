@@ -10,17 +10,17 @@ def info(args):
         if args.f or args.l and f.n_entries:
             if (args.f + args.l) < f.n_entries:
                 print(f"first {args.f} entries:")
-                for values in [f.read() for _ in range(args.f)]:
+                for values in [next(f) for _ in range(args.f)]:
                     print(f"{values}")
                 f.goto_entry(f.n_entries - args.l)
                 print("...")
                 print(f"last {args.l} entries:")
-                for values in [f.read() for _ in range(args.l)]:
+                for values in [next(f) for _ in range(args.l)]:
                     print(f"{values}")
             else:
                 print("entries:")
                 for _ in range(f.n_entries):
-                    print(f"{f.read()}")
+                    print(f"{next(f)}")
 
 def export(args):
     import sys

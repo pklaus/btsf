@@ -129,14 +129,14 @@ class BinaryTimeSeriesFile():
 
     def read_last(self):
         if self.n_entries == 0:
-            raise BtsfEOFError()
+            raise EmptyBtsfError()
         self._fd.seek(-self._struct_size, 2)    # SEEK_END
-        return self.read()
+        return next(self)
 
-    def read(self):
+    def __next__(self):
         data = self._fd.read(self._struct_size)
         if len(data) == 0:
-            raise BtsfEOFError()
+            raise NoFurtherData() # which also is a StopIteration
         return struct.unpack(self._struct_format, data)
 
     def __iter__(self):
@@ -184,7 +184,10 @@ class BtsfError(Exception):
 class UnknownFileError(NameError, BtsfError):
     pass
 
-class BtsfEOFError(EOFError, BtsfError):
+class NoFurtherData(StopIteration, BtsfError):
+    pass
+
+class EmtpyBtsfError(BtsfError):
     pass
 
 class InvalidFileContentError(NameError, BtsfError):
