@@ -19,8 +19,8 @@ setup(name='btsf',
       author_email = 'philipp.l.klaus@web.de',
       url = 'https://github.com/pklaus/btsf',
       license = 'GPL',
-      #packages = ['',],
-      py_modules = ['btsf',],
+      packages = ['btsf',],
+      #py_modules = ['',],
       entry_points = {
           'console_scripts': [
               'btsf = btsf:main',
