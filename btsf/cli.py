@@ -2,13 +2,7 @@
 
 from . import BinaryTimeSeriesFile
 
-def main():
-    import argparse
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-f', default=5, type=int, metavar='n', help="print first n entries")
-    parser.add_argument('-l', default=5, type=int, metavar='n', help="print last n entries")
-    parser.add_argument('btsf_file')
-    args = parser.parse_args()
+def info(args):
     with BinaryTimeSeriesFile.openread(args.btsf_file) as f:
         print(f"{args.btsf_file} - Number of entries: {f.n_entries}")
         print(f"Metrics:")
@@ -28,5 +22,16 @@ def main():
                 for _ in range(f.n_entries):
                     print(f"{f.read()}")
 
-if __name__ == "__main__":
-    main()
+def main():
+    import argparse
+    parser = argparse.ArgumentParser()
+    subparsers = parser.add_subparsers()
+
+    info_parser = subparsers.add_parser('info')
+    info_parser.add_argument('-f', default=5, type=int, metavar='n', help="print first n entries")
+    info_parser.add_argument('-l', default=5, type=int, metavar='n', help="print last n entries")
+    info_parser.add_argument('btsf_file')
+    info_parser.set_defaults(func=info)
+
+    args = parser.parse_args()
+    args.func(args)
