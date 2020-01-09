@@ -129,14 +129,14 @@ class BinaryTimeSeriesFile():
 
     def read_last(self):
         if self.n_entries == 0:
-            raise EOFError()
+            raise BtsfEOFError()
         self._fd.seek(-self._struct_size, 2)    # SEEK_END
         return self.read()
 
     def read(self):
         data = self._fd.read(self._struct_size)
         if len(data) == 0:
-            raise EOFError()
+            raise BtsfEOFError()
         return struct.unpack(self._struct_format, data)
 
     def read_all(self):
@@ -158,7 +158,8 @@ class BinaryTimeSeriesFile():
         self._fd.seek(current_pos)
         n_data_bytes = end - start
 
-        assert n_data_bytes % self._struct_size == 0
+        if n_data_bytes % self._struct_size != 0:
+            raise InvalidFileContentError(f'{n_data_bytes % self._struct_size} trailing bytes at the end of the file')
         return n_data_bytes // self._struct_size
 
     def flush(self):
@@ -174,5 +175,14 @@ class BinaryTimeSeriesFile():
     def __exit__(self, type_, value, tb):
         self.close()
 
-class UnknownFileError(NameError):
+class BtsfError(Exception):
+    pass
+
+class UnknownFileError(NameError, BtsfError):
+    pass
+
+class BtsfEOFError(EOFError, BtsfError):
+    pass
+
+class InvalidFileContentError(NameError, BtsfError):
     pass
