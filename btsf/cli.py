@@ -28,11 +28,11 @@ def export(args):
     with BinaryTimeSeriesFile.openread(args.btsf_file) as f:
         if args.format == 'csv':
             args.out_file.write('; '.join(f"{metric.identifier}" for metric in f.metrics) + '\n')
-            for values in f.iter_entries():
+            for values in f:
                 args.out_file.write('; '.join(str(v) for v in values) + '\n')
         elif args.format == 'tabular':
             args.out_file.write(' '.join('{:20.20s}'.format(m.identifier) for m in f.metrics) + '\n')
-            for values in f.iter_entries():
+            for values in f:
                 args.out_file.write(' '.join('{:20.20}'.format(str(v)) for v in values) + '\n')
         else:
             raise NotImplementedError

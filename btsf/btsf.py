@@ -139,7 +139,7 @@ class BinaryTimeSeriesFile():
             raise BtsfEOFError()
         return struct.unpack(self._struct_format, data)
 
-    def iter_entries(self):
+    def __iter__(self):
         """
         A generator facilitating iterating over all entry tuples.
         """
