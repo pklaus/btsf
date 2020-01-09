@@ -24,7 +24,7 @@ def info(args):
 
 def export(args):
     import sys
-    sys.stderr.write(f"Exporting {args.btsf_file} to {args.out_file.name}\n")
+    sys.stderr.write(f"Exporting {args.btsf_file} to {args.out_file.name} (format: {args.format})\n")
     with BinaryTimeSeriesFile.openread(args.btsf_file) as f:
         if args.format == 'csv':
             args.out_file.write('; '.join(f"{metric.identifier}" for metric in f.metrics) + '\n')
