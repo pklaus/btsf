@@ -42,6 +42,8 @@ class BinaryTimeSeriesFile():
     FILE_SIGNATURE = b'BinaryTimeSeriesFile_v0.1\x00\x00\x00\x00\x00\x00\x00'
     HEADER_PADDING = 8
 
+    _chunksize = 256
+
     # the factory methods at the module level, `create`, `openread` and `openwrite` should be used to create instances of this class.
     def __init__(self, filename):
         self._fdname = filename
@@ -75,10 +77,14 @@ class BinaryTimeSeriesFile():
 
         f._metrics = metrics
         f._struct_format = header['struct_format']
+        f._struct = struct.Struct(f._struct_format)
+        f._struct_size = header['struct_size']
         f._byte_order = header['byte_order']
         f._pad_to = header['pad_to']
-        f._struct_size = header['struct_size']
         f._data_offset = f._fd.tell()
+        # round chunksize down to closest multiple of self._struct_size:
+        # but self._struct_size is our minimum chunksize:
+        f._chunksize = max(BinaryTimeSeriesFile._chunksize // f._struct_size * f._struct_size, f._struct_size)
 
         return f
 
@@ -96,9 +102,11 @@ class BinaryTimeSeriesFile():
 
         f._metrics = metrics
         f._struct_format = struct_format
+        f._struct = struct.Struct(struct_format)
+        f._struct_size = f._struct.size
         f._byte_order = byte_order
         f._pad_to = pad_to
-        f._struct_size = struct.calcsize(struct_format)
+        f._chunksize = max(BinaryTimeSeriesFile._chunksize // f._struct_size * f._struct_size, f._struct_size)
 
         f._fd = open(filename, 'w+b')
         f._write_header()
@@ -144,7 +152,7 @@ class BinaryTimeSeriesFile():
         data = self._fd.read(self._struct_size)
         if len(data) == 0:
             raise NoFurtherData() # which also is a StopIteration
-        return struct.unpack(self._struct_format, data)
+        return self._struct.unpack(data)
 
     def __getitem__(self, i):
         if i < 0:
@@ -162,10 +170,19 @@ class BinaryTimeSeriesFile():
         A generator facilitating iterating over all entry tuples.
         """
         self.goto_entry(entry=0)
-        data = self._fd.read(self._struct_size)
-        while len(data) == self._struct_size:
-            yield struct.unpack(self._struct_format, data)
-            data = self._fd.read(self._struct_size)
+        # naive approach (slower than the one following)
+        #buf = self._fd.read(self._struct_size)
+        #while len(buf) == self._struct_size:
+        #    yield self._struct.unpack(buf)
+        #    buf = self._fd.read(self._struct_size)
+        buf = self._fd.read(chunksize):
+        while buf:
+            offset = 0
+            buf_len = len(buf)
+            while offset < buf_len:
+                yield self._struct.unpack_from(buf, offset=offset)
+                offset += self._struct_size
+            buf = self._fd.read(chunksize):
 
     def goto_entry(self, entry=0):
         assert entry < self.n_entries
