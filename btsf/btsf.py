@@ -125,6 +125,7 @@ class BinaryTimeSeriesFile():
         self._fd.write(b'\x00' * (-len(header) % BinaryTimeSeriesFile.HEADER_PADDING))
 
     def append(self, *values):
+        self.seekend()
         self._fd.write(struct.pack(self._struct_format, *values))
 
     def first(self):
