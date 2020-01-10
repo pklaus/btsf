@@ -100,7 +100,7 @@ class BinaryTimeSeriesFile():
         f._pad_to = pad_to
         f._struct_size = struct.calcsize(struct_format)
 
-        f._fd = open(filename, 'wb')
+        f._fd = open(filename, 'w+b')
         f._write_header()
         f._data_offset = f._fd.tell()
         return f
