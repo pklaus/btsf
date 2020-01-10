@@ -76,6 +76,11 @@ class TestBinaryTimeSeriesFile(TestCase):
                 f.append(*t)
             self.assertEqual(f.n_entries, len(VALID_TUPLES))
 
+            # check our implementation of __iter__()
+            self.assertEqual(len([t for t in f]), len(VALID_TUPLES))
+            # twice...
+            self.assertEqual(len([t for t in f]), len(VALID_TUPLES))
+
         # open the file again for reading only:
         with BinaryTimeSeriesFile.openread(tf.name) as f:
             # test if the file can be read back with its fundamental attributes
