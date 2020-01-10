@@ -149,6 +149,7 @@ class BinaryTimeSeriesFile():
         """
         A generator facilitating iterating over all entry tuples.
         """
+        self.goto_entry(entry=0)
         data = self._fd.read(self._struct_size)
         while len(data) == self._struct_size:
             yield struct.unpack(self._struct_format, data)
