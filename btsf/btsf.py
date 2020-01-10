@@ -146,6 +146,17 @@ class BinaryTimeSeriesFile():
             raise NoFurtherData() # which also is a StopIteration
         return struct.unpack(self._struct_format, data)
 
+    def __getitem__(self, i):
+        if i < 0:
+            i += self.n_entries
+        if 0 <= i < self.n_entries:
+            self.goto_entry(entry=i)
+            return next(self)
+        raise IndexError('Index i={} out of range ({})'.format(i, range(self.n_entries)))
+
+    def __len__(self):
+        return self.n_entries
+
     def __iter__(self):
         """
         A generator facilitating iterating over all entry tuples.

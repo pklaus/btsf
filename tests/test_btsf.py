@@ -81,6 +81,9 @@ class TestBinaryTimeSeriesFile(TestCase):
             # twice...
             self.assertEqual(len([t for t in f]), len(VALID_TUPLES))
 
+            # check our implementation of __len__()
+            self.assertEqual(len(f), len(VALID_TUPLES))
+
         # open the file again for reading only:
         with BinaryTimeSeriesFile.openread(tf.name) as f:
             # test if the file can be read back with its fundamental attributes
@@ -89,10 +92,21 @@ class TestBinaryTimeSeriesFile(TestCase):
             self.assertEqual(f._struct_format, '<dfQB3x')
             self.assertEqual(len(f._metrics), 4)
 
+            # check for goto_entry()
+            f.goto_entry(2)
+
+            # check for __iter__()
             for i, values in enumerate(f):
                 for written_val, read_val in zip(VALID_TUPLES[i], values):
                     self.assertFloatAlmostEqual(written_val, read_val)
 
+            # check for __getitem__():
+            for i, t in enumerate(VALID_TUPLES):
+                for written_val, read_val in zip(t, f[i]):
+                    self.assertFloatAlmostEqual(written_val, read_val)
+
+            # check we actually read the last value in our file
+            # using the __next__() method under the hood:
             self.assertRaises(StopIteration, lambda: next(f))
 
             # file was opened for reading only
