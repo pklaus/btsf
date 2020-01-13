@@ -86,6 +86,7 @@ class BinaryTimeSeriesFile():
         # but self._struct_size is our minimum chunksize:
         f._chunksize = max(BinaryTimeSeriesFile._chunksize // f._struct_size * f._struct_size, f._struct_size)
 
+        assert len(f._struct.unpack(b'\x00' * f._struct.size)) == len(f._metrics)
         assert f._struct_format == BinaryTimeSeriesFile._assemble_struct(f._byte_order, metrics, f._pad_to)[0]
 
         return f
