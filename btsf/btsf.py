@@ -239,7 +239,7 @@ class BinaryTimeSeriesFile():
     def to_pandas(self):
         import pandas as pd
         a = self.to_numpy()
-        return pd.DataFrame.from_records(a, columns=a.dtype.names)
+        return pd.DataFrame.from_records(a)
 
     @property
     def n_entries(self):
