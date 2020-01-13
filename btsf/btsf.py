@@ -226,10 +226,12 @@ class BinaryTimeSeriesFile():
             Type.Int64:  self._byte_order + 'i8',
             Type.UInt64: self._byte_order + 'u8',
         }
-        dt = [(m.identifier, np_dtype_map[m.type]) for m in self.metrics]
-        if self._struct_padding:
-            dt += [('__padding__', 'V%d' % self._struct_padding)]
-        dt = np.dtype(dt)
+        dt = np.dtype({
+            'names': (m.identifier for m in self.metrics),
+            'formats': (np_dtype_map[m.type] for m in self.metrics),
+            'titles': (f"{m.name} - {m.description}" for m in self.metrics),
+            'itemsize': self._struct_size,
+        })
         self.goto_entry(entry=0)
         a = np.fromfile(self._fd, dtype=dt, offset=0)
         if output == 'structured':
