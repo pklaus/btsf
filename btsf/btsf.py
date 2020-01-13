@@ -192,18 +192,49 @@ class BinaryTimeSeriesFile():
         #while len(buf) == self._struct_size:
         #    yield self._struct.unpack(buf)
         #    buf = self._fd.read(self._struct_size)
-        buf = self._fd.read(chunksize)
+        buf = self._fd.read(self._chunksize)
         while buf:
             offset = 0
             buf_len = len(buf)
             while offset < buf_len:
                 yield self._struct.unpack_from(buf, offset=offset)
                 offset += self._struct_size
-            buf = self._fd.read(chunksize)
+            buf = self._fd.read(self._chunksize)
 
     def goto_entry(self, entry=0):
         assert entry < self.n_entries
         self._fd.seek(self._data_offset + entry * self._struct_size)
+
+    def to_numpy(self, output='structured'):
+        """
+        output: ('structured', 'columns')
+        relevant numpy documentation:
+            https://docs.scipy.org/doc/numpy/user/basics.rec.html
+            https://docs.scipy.org/doc/numpy/reference/arrays.dtypes.html#arrays-dtypes-constructing
+        """
+        import numpy as np
+        np_dtype_map = {
+            Type.Double: self._byte_order + 'f8',
+            Type.Float:  self._byte_order + 'f4',
+            Type.Int8:   self._byte_order + 'i1',
+            Type.UInt8:  self._byte_order + 'u1',
+            Type.Int16:  self._byte_order + 'i2',
+            Type.UInt16: self._byte_order + 'u2',
+            Type.Int32:  self._byte_order + 'i4',
+            Type.UInt32: self._byte_order + 'u4',
+            Type.Int64:  self._byte_order + 'i8',
+            Type.UInt64: self._byte_order + 'u8',
+        }
+        dt = [(m.identifier, np_dtype_map[m.type]) for m in self.metrics]
+        if self._struct_padding:
+            dt += [('__padding__', 'V%d' % self._struct_padding)]
+        dt = np.dtype(dt)
+        self.goto_entry(entry=0)
+        a = np.fromfile(self._fd, dtype=dt, offset=0)
+        if output == 'structured':
+            return a
+        if output == 'columns':
+            return (a[name] for name in a.dtype.names)
 
     @property
     def n_entries(self):

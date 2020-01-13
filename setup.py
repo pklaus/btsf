@@ -28,6 +28,9 @@ setup(name='btsf',
       },
       zip_safe = True,
       platforms = 'any',
+      extras_require = {
+          "to_numpy": ["numpy"],
+      },
       install_requires = [
           "attrs",
       ],
