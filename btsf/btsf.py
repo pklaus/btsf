@@ -86,17 +86,33 @@ class BinaryTimeSeriesFile():
         # but self._struct_size is our minimum chunksize:
         f._chunksize = max(BinaryTimeSeriesFile._chunksize // f._struct_size * f._struct_size, f._struct_size)
 
+        assert f._struct_format == BinaryTimeSeriesFile._assemble_struct(f._byte_order, metrics, f._pad_to)[0]
+
         return f
+
+    @staticmethod
+    def _assemble_struct(byte_order, metrics, pad_to=None):
+        struct_format = byte_order + ''.join(m.type.value for m in metrics)
+        if pad_to:
+            size = struct.calcsize(struct_format)
+            struct_padding = -size % pad_to
+            struct_format += '%dx' % struct_padding
+        return struct_format, struct_padding
+
+    @property
+    def _struct_padding(self):
+        return BinaryTimeSeriesFile._assemble_struct(
+            self._byte_order,
+            self._metrics,
+            self._pad_to)[1]
 
     def seekend(self):
         self._fd.seek(0, 2)    # SEEK_END
 
     @staticmethod
     def create(filename, metrics, byte_order='<', pad_to=8):
-        struct_format = byte_order + ''.join(m.type.value for m in metrics)
-        if pad_to:
-            size = struct.calcsize(struct_format)
-            struct_format += '%dx' % (-size % pad_to)
+        struct_format, struct_padding = BinaryTimeSeriesFile._assemble_struct(
+            byte_order, metrics, pad_to)
 
         f = BinaryTimeSeriesFile(filename)
 
@@ -122,9 +138,10 @@ class BinaryTimeSeriesFile():
         header = json.dumps({
             'metrics': [m.to_dict() for m in self._metrics],
             'struct_format': self._struct_format,
+            'struct_size': self._struct_size,
             'byte_order': self._byte_order,
             'pad_to': self._pad_to,
-            'struct_size': self._struct_size,
+            'struct_padding': self._struct_padding,
             'file_version': 0.1,
         })
         header = header.encode('utf-8')
@@ -175,14 +192,14 @@ class BinaryTimeSeriesFile():
         #while len(buf) == self._struct_size:
         #    yield self._struct.unpack(buf)
         #    buf = self._fd.read(self._struct_size)
-        buf = self._fd.read(chunksize):
+        buf = self._fd.read(chunksize)
         while buf:
             offset = 0
             buf_len = len(buf)
             while offset < buf_len:
                 yield self._struct.unpack_from(buf, offset=offset)
                 offset += self._struct_size
-            buf = self._fd.read(chunksize):
+            buf = self._fd.read(chunksize)
 
     def goto_entry(self, entry=0):
         assert entry < self.n_entries
