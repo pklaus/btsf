@@ -16,11 +16,14 @@ Quick description of the file structure of a .btfs file:
 File Signature (fixed)
 (32 bytes)
 
-one ore more header sections (JSON encoded)
-(8-byte size field + variable length padded 8-byte boundary with 0x00)
+at least one intro section
+(16-byte header + variable length payload + variable length reserved zero-bytes)
+
+end of intro section header
+(16 bytes)
 
 concatenated packed structured data
-(x entries of fixed structure and length)
+(structure of fixed length * N, thus appendable!)
 ```
 
 A typical use case for btfs is:

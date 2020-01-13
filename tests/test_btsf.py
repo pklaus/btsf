@@ -5,6 +5,7 @@ import tempfile
 import io
 
 from btsf import BinaryTimeSeriesFile, Metric, Type
+from btsf import IntroSection, IntroSectionHeader
 
 DEFAULT_METRICS = [
     Metric('time', Type.Double),
@@ -167,6 +168,67 @@ class TestBinaryTimeSeriesFile(TestCase):
 
             for wrote, got in zip(VALID_TUPLES[-1], f.last()):
                 self.assertFloatAlmostEqual(wrote, got)
+
+    def test_write_further_intro(self):
+
+        tf = tempfile.NamedTemporaryFile(suffix='.btsf')
+
+        annotations = {}
+        import json
+        payload = json.dumps(annotations).encode('utf-8')
+        annotation_intro = IntroSection(
+            header=IntroSectionHeader(
+                kind=IntroSectionHeader.Kind.AnnotationsSection,
+                payload_size=len(payload),
+                followup_size=55,
+            ),
+            payload=payload
+        )
+        further_intro_sections = [annotation_intro]
+        with BinaryTimeSeriesFile.create(tf.name, DEFAULT_METRICS,
+                 further_intro_sections=further_intro_sections) as f:
+            for t in VALID_TUPLES:
+                f.append(*t)
+            self.assertEqual(f.n_entries, len(VALID_TUPLES))
+
+            # check our implementation of __iter__()
+            self.assertEqual(len([t for t in f]), len(VALID_TUPLES))
+            # twice...
+            self.assertEqual(len([t for t in f]), len(VALID_TUPLES))
+
+            # check our implementation of __len__()
+            self.assertEqual(len(f), len(VALID_TUPLES))
+
+        # open the file again for reading only:
+        with BinaryTimeSeriesFile.openread(tf.name) as f:
+            # test if the file can be read back with its fundamental attributes
+            self.assertEqual(f._byte_order, '<')
+            self.assertEqual(annotation_intro, f._intro_sections[1])
+            self.assertEqual(f._struct_size, 24)
+            self.assertEqual(f._struct_format, '<dfQB3x')
+            self.assertEqual(len(f._metrics), 4)
+
+            # check for goto_entry()
+            f.goto_entry(2)
+
+            # check for __iter__()
+            for i, values in enumerate(f):
+                for written_val, read_val in zip(VALID_TUPLES[i], values):
+                    self.assertFloatAlmostEqual(written_val, read_val)
+
+            # check for __getitem__():
+            for i, t in enumerate(VALID_TUPLES):
+                for written_val, read_val in zip(t, f[i]):
+                    self.assertFloatAlmostEqual(written_val, read_val)
+
+            # check we actually read the last value in our file
+            # using the __next__() method under the hood:
+            self.assertRaises(StopIteration, lambda: next(f))
+
+            # file was opened for reading only
+            self.assertRaises(io.UnsupportedOperation, f.append, *VALID_TUPLES[0])
+
+
 
     def assertIsNaN(self, value, msg=None):
         """

@@ -2,6 +2,7 @@ import enum
 import json
 import struct
 import attr
+import io
 
 class Type(enum.Enum):
     Float = 'f'
@@ -17,6 +18,7 @@ class Type(enum.Enum):
 
 @attr.s
 class Metric():
+
     identifier = attr.ib()
     type = attr.ib(type=Type)
     name = attr.ib(default='', type=str)
@@ -37,22 +39,33 @@ class Metric():
         #    'is_time': self.is_time,
         #}
 
-class HeaderID(enum.IntEnum):
-    EOH = 0x0
-    Main = 0x1
-    Annotations = 0x2
+@attr.s
+class IntroSectionHeader():
 
-class HeaderType(enum.IntEnum):
-    NONE = 0x0
-    RawBytes = 0x1
-    JSON = 0x2
+    STRUCT = struct.Struct('<B7xLL')
+
+    class Kind(enum.IntEnum):
+        EndOfIntro = 0x0
+        MasterIntroSection = 0x1
+        AnnotationsSection = 0x2
+
+    kind = attr.ib(type=int, default=Kind.EndOfIntro)
+    payload_size = attr.ib(type=int, default=0)
+    followup_size = attr.ib(type=int, default=0)
+
+    def pack(self) -> bytes:
+        return self.STRUCT.pack(self.kind, self.payload_size, self.followup_size)
+
+    @staticmethod
+    def unpack_from(fd: io.IOBase):
+        data = fd.read(IntroSectionHeader.STRUCT.size)
+        kind, payload_size, followup_size = IntroSectionHeader.STRUCT.unpack(data)
+        return IntroSectionHeader(kind, payload_size, followup_size)
 
 @attr.s
-class Header():
-    id = attr.ib(type=int, default=HeaderID.EOH)
-    type = attr.ib(type=int, default=HeaderType.NONE)
-    opt = attr.ib(type=int, default=0x0)
-    data = attr.ib(type=bytes, default=attr.Factory(bytes))
+class IntroSection():
+    header = attr.ib(type=IntroSectionHeader)
+    payload = attr.ib(type=bytes, default=b'')
 
 class BinaryTimeSeriesFile():
 
@@ -82,38 +95,35 @@ class BinaryTimeSeriesFile():
         f._fd = open(filename, mode)
         if not f._fd.read(32).startswith(BinaryTimeSeriesFile.FILE_SIGNATURE):
             raise UnknownFileError("File doesn't start with btsf file signature")
-        h_id, h_type, h_opt, h_size, = struct.unpack('<HBBL', f._fd.read(8))
-        # must start with Main Header / JSON:
-        assert h_id == HeaderID.Main
-        assert h_type == HeaderType.JSON
-        main_header = json.loads(f._fd.read(h_size).decode('utf-8'))
-        # advance file pointer according to header padding
-        f._fd.seek(-h_size % BinaryTimeSeriesFile.HEADER_PADDING, 1)
-        # ready any further headers
-        h_id, h_type, h_opt, h_size = struct.unpack('<HBBL', f._fd.read(8))
-        while h_id != HeaderID.EOH:
-            # One more header to read
-            header = Header(id=h_id, type=h_type, opt=h_opt, data=f._fd.read(h_size))
-            if h_type == HeaderType.JSON:
-                header.data = json.loads(header.data.decode('utf-8'))
-            f._additional_headers.append(header)
-            f._fd.seek(-size % BinaryTimeSeriesFile.HEADER_PADDING, 1)
-            h_code, h_opt, h_size, = struct.unpack('<HBBL', f._fd.read(8))
-        f._fd.seek(-h_size % BinaryTimeSeriesFile.HEADER_PADDING, 1)
+
+        # Read all intro sections (and advance file pointer to begin of actual data...)
+        f._intro_sections = []
+        ish = IntroSectionHeader.unpack_from(f._fd)
+        while ish.kind != IntroSectionHeader.Kind.EndOfIntro:
+            intro_section = IntroSection(header=ish, payload=f._fd.read(ish.payload_size))
+            f._intro_sections.append(intro_section)
+            # advance file pointer according to next intro section header
+            f._fd.seek(ish.followup_size, 1)
+            ish = IntroSectionHeader.unpack_from(f._fd)
+        f._fd.seek(ish.followup_size, 1)
+
+        # must start with Master Intro Section
+        assert f._intro_sections[0].header.kind == IntroSectionHeader.Kind.MasterIntroSection
+        main_intro = json.loads(f._intro_sections[0].payload.decode('utf-8'))
 
         #now interpret the main header:
-        f._metrics = [Metric(**m) for m in main_header['metrics']]
+        f._metrics = [Metric(**m) for m in main_intro['metrics']]
         for m in f._metrics:
             m.type = Type(m.type)
-        f._struct_format = main_header['struct_format']
+        f._struct_format = main_intro['struct_format']
         f._struct = struct.Struct(f._struct_format)
-        f._struct_size = main_header['struct_size']
-        f._byte_order = main_header['byte_order']
-        f._pad_to = main_header['pad_to']
+        f._struct_size = main_intro['struct_size']
+        f._byte_order = main_intro['byte_order']
+        f._pad_to = main_intro['pad_to']
         f._data_offset = f._fd.tell()
 
-        # round chunksize down to closest multiple of self._struct_size:
-        # but self._struct_size is our minimum chunksize:
+        # round chunksize down to closest multiple of f._struct_size:
+        # but f._struct_size is our minimum chunksize:
         f._chunksize = max(BinaryTimeSeriesFile._chunksize // f._struct_size * f._struct_size, f._struct_size)
 
         assert len(f._struct.unpack(b'\x00' * f._struct.size)) == len(f._metrics)
@@ -141,7 +151,7 @@ class BinaryTimeSeriesFile():
         self._fd.seek(0, 2)    # SEEK_END
 
     @staticmethod
-    def create(filename, metrics, additional_headers=None, byte_order='<', pad_to=8):
+    def create(filename, metrics, byte_order='<', pad_to=8, further_intro_sections=None):
         struct_format, struct_padding = BinaryTimeSeriesFile._assemble_struct(
             byte_order, metrics, pad_to)
 
@@ -153,13 +163,15 @@ class BinaryTimeSeriesFile():
         f._struct_size = f._struct.size
         f._byte_order = byte_order
         f._pad_to = pad_to
+        f._intro_sections = []
+        f._populate_main_intro_section()
+        f._intro_sections += further_intro_sections or []
         f._chunksize = max(BinaryTimeSeriesFile._chunksize // f._struct_size * f._struct_size, f._struct_size)
-        f._additional_headers = additional_headers or []
 
         f._fd = open(filename, 'w+b')
-        f._write_main_header()
-        f._write_additional_headers()
-        f._write_end_of_header()
+        f._write_file_signature()
+        f._write_all_intro_sections()
+        f._write_end_of_intro()
         f._data_offset = f._fd.tell()
         return f
 
@@ -167,15 +179,10 @@ class BinaryTimeSeriesFile():
     def metrics(self):
         return self._metrics
 
-    def _write_additional_headers(self):
-        for header in self._additional_headers:
-            self._write_header(header)
-
-    def _write_end_of_header(self):
-        self._write_header(Header(id=HeaderID.EOH))
-
-    def _write_main_header(self):
+    def _write_file_signature(self):
         self._fd.write(self.FILE_SIGNATURE)
+
+    def _populate_main_intro_section(self):
         data = {
             'metrics': [m.to_dict() for m in self._metrics],
             'struct_format': self._struct_format,
@@ -185,19 +192,28 @@ class BinaryTimeSeriesFile():
             'struct_padding': self._struct_padding,
             'file_version': 0.1,
         }
-        self._write_json_header(HeaderID.Main, data=data)
+        payload = json.dumps(data).encode('utf-8')
+        ish = IntroSectionHeader(
+                kind=IntroSectionHeader.Kind.MasterIntroSection,
+                payload_size = len(payload),
+                followup_size = -len(payload) % BinaryTimeSeriesFile.HEADER_PADDING
+            )
+        intro_section = IntroSection(header=ish, payload=payload)
+        self._intro_sections.append(intro_section)
 
-    def _write_json_header(self, h_id, data=None, h_opt=0x0):
-        data=json.dumps(data).encode('utf-8')
-        header = Header(id=h_id, type=HeaderType.JSON, opt=h_opt, data=data)
-        self._write_header(header)
+    def _write_single_intro_section(self, intro_section: IntroSection):
+        self._fd.write(intro_section.header.pack())
+        self._fd.write(intro_section.payload)
+        self._fd.write(b'\x00' * intro_section.header.followup_size)
 
-    def _write_header(self, header: Header):
-        h_size = len(header.data)
-        self._fd.write(struct.pack('<HBBL', header.id, header.type, header.opt, h_size))
-        self._fd.write(header.data)
-        # any header section is padded with \x00 to a multiple of HEADER_PADDING bytes
-        self._fd.write(b'\x00' * (-h_size % BinaryTimeSeriesFile.HEADER_PADDING))
+    def _write_all_intro_sections(self):
+        for intro_section in self._intro_sections:
+            self._write_single_intro_section(intro_section)
+
+    def _write_end_of_intro(self):
+        self._write_single_intro_section(
+                IntroSection(IntroSectionHeader(kind=IntroSectionHeader.Kind.EndOfIntro))
+                )
 
     def append(self, *values):
         self.seekend()
