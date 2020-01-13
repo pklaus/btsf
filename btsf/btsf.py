@@ -236,6 +236,11 @@ class BinaryTimeSeriesFile():
         if output == 'columns':
             return (a[name] for name in a.dtype.names)
 
+    def to_pandas(self):
+        import pandas as pd
+        a = self.to_numpy()
+        return pd.DataFrame.from_records(a, columns=a.dtype.names)
+
     @property
     def n_entries(self):
         current_pos = self._fd.tell()

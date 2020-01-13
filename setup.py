@@ -30,6 +30,7 @@ setup(name='btsf',
       platforms = 'any',
       extras_require = {
           "to_numpy": ["numpy"],
+          "to_pandas": ["numpy", "pandas"],
       },
       install_requires = [
           "attrs",
