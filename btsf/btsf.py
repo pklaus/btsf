@@ -57,7 +57,7 @@ class IntroSectionHeader():
         return self.STRUCT.pack(self.kind, self.payload_size, self.followup_size)
 
     @staticmethod
-    def unpack_from(fd: io.IOBase):
+    def load_from(fd: io.IOBase):
         data = fd.read(IntroSectionHeader.STRUCT.size)
         kind, payload_size, followup_size = IntroSectionHeader.STRUCT.unpack(data)
         return IntroSectionHeader(kind, payload_size, followup_size)
@@ -98,13 +98,13 @@ class BinaryTimeSeriesFile():
 
         # Read all intro sections (and advance file pointer to begin of actual data...)
         f._intro_sections = []
-        ish = IntroSectionHeader.unpack_from(f._fd)
+        ish = IntroSectionHeader.load_from(f._fd)
         while ish.kind != IntroSectionHeader.Kind.EndOfIntro:
             intro_section = IntroSection(header=ish, payload=f._fd.read(ish.payload_size))
             f._intro_sections.append(intro_section)
             # advance file pointer according to next intro section header
             f._fd.seek(ish.followup_size, 1)
-            ish = IntroSectionHeader.unpack_from(f._fd)
+            ish = IntroSectionHeader.load_from(f._fd)
         f._fd.seek(ish.followup_size, 1)
 
         # must start with Master Intro Section
