@@ -304,10 +304,24 @@ class BinaryTimeSeriesFile():
         if output == 'columns':
             return (a[name] for name in a.dtype.names)
 
-    def to_pandas(self):
+    def to_pandas(self, index_metric=None):
+        """
+        index_metric: The metric that should become the index column
+            optional value 'time': the first column marked as time will be the index
+        """
         import pandas as pd
         a = self.to_numpy()
-        return pd.DataFrame.from_records(a)
+        df = pd.DataFrame.from_records(a)
+        index_column_name = None
+        for m in self._metrics:
+            if m == index_metric or (index_metric == 'time' and m.is_time):
+                index_column_name = m.identifier
+                break
+        if index_metric and not index_column_name:
+            raise BtsfNameError('requested index metric not found in the data')
+        if index_column_name:
+            df.set_index(index_column_name, inplace=True)
+        return df
 
     @property
     def n_entries(self):
@@ -338,7 +352,10 @@ class BinaryTimeSeriesFile():
 class BtsfError(Exception):
     pass
 
-class UnknownFileError(NameError, BtsfError):
+class BtsfNameError(NameError, BtsfError):
+    pass
+
+class UnknownFileError(BtsfNameError):
     pass
 
 class NoFurtherData(StopIteration, BtsfError):
@@ -347,5 +364,5 @@ class NoFurtherData(StopIteration, BtsfError):
 class EmtpyBtsfError(BtsfError):
     pass
 
-class InvalidFileContentError(NameError, BtsfError):
+class InvalidFileContentError(BtsfNameError):
     pass
