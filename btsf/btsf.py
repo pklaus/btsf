@@ -1,71 +1,9 @@
-import enum
 import json
 import struct
-import attr
-import io
 
-class Type(enum.Enum):
-    Float = 'f'
-    Double = 'd'
-    Int8 = 'b'
-    UInt8 = 'B'
-    Int16 = 'h'
-    UInt16 = 'H'
-    Int32 = 'l'
-    UInt32 = 'L'
-    Int64 = 'q'
-    UInt64 = 'Q'
-
-@attr.s
-class Metric():
-
-    identifier = attr.ib()
-    type = attr.ib(type=Type)
-    name = attr.ib(default='', type=str)
-    unit = attr.ib(default='', type=str)
-    description = attr.ib(default='', type=str)
-    is_time = attr.ib(default=False, type=bool)
-
-    def to_dict(self):
-        d = attr.asdict(self)
-        d['type'] = self.type.value
-        return d
-        #return {
-        #    'identifier': self.identifier,
-        #    'type': self.type.value,
-        #    'name': self.name,
-        #    'unit': self.unit,
-        #    'description': self.description,
-        #    'is_time': self.is_time,
-        #}
-
-@attr.s
-class IntroSectionHeader():
-
-    STRUCT = struct.Struct('<B7xLL')
-
-    class Kind(enum.IntEnum):
-        EndOfIntro = 0x0
-        MasterIntroSection = 0x1
-        AnnotationsSection = 0x2
-
-    kind = attr.ib(type=int, default=Kind.EndOfIntro)
-    payload_size = attr.ib(type=int, default=0)
-    followup_size = attr.ib(type=int, default=0)
-
-    def pack(self) -> bytes:
-        return self.STRUCT.pack(self.kind, self.payload_size, self.followup_size)
-
-    @staticmethod
-    def load_from(fd: io.IOBase):
-        data = fd.read(IntroSectionHeader.STRUCT.size)
-        kind, payload_size, followup_size = IntroSectionHeader.STRUCT.unpack(data)
-        return IntroSectionHeader(kind, payload_size, followup_size)
-
-@attr.s
-class IntroSection():
-    header = attr.ib(type=IntroSectionHeader)
-    payload = attr.ib(type=bytes, default=b'')
+from .exceptions import *
+from .metric import *
+from .intro import *
 
 class BinaryTimeSeriesFile():
 
@@ -348,21 +286,3 @@ class BinaryTimeSeriesFile():
 
     def __exit__(self, type_, value, tb):
         self.close()
-
-class BtsfError(Exception):
-    pass
-
-class BtsfNameError(NameError, BtsfError):
-    pass
-
-class UnknownFileError(BtsfNameError):
-    pass
-
-class NoFurtherData(StopIteration, BtsfError):
-    pass
-
-class EmptyBtsfError(BtsfError):
-    pass
-
-class InvalidFileContentError(BtsfNameError):
-    pass
