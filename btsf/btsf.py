@@ -361,7 +361,7 @@ class UnknownFileError(BtsfNameError):
 class NoFurtherData(StopIteration, BtsfError):
     pass
 
-class EmtpyBtsfError(BtsfError):
+class EmptyBtsfError(BtsfError):
     pass
 
 class InvalidFileContentError(BtsfNameError):
