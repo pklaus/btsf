@@ -1,6 +1,8 @@
 import attr
 import enum
 
+__all__ = ["Type", "Metric"]
+
 class Type(enum.Enum):
     Float = 'f'
     Double = 'd'

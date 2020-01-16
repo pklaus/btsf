@@ -5,6 +5,8 @@ from .exceptions import *
 from .metric import *
 from .intro import *
 
+__all__ = ['BinaryTimeSeriesFile']
+
 class BinaryTimeSeriesFile():
 
     FILE_SIGNATURE = b'BinaryTimeSeriesFile_v0.1\x00\x00\x00\x00\x00\x00\x00'

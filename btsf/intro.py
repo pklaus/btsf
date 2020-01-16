@@ -3,6 +3,8 @@ import enum
 import io
 import struct
 
+__all__ = ["IntroSectionHeader", "IntroSection"]
+
 @attr.s
 class IntroSectionHeader():
 
