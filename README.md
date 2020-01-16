@@ -44,13 +44,13 @@ What btfs is not suited for, at least not perfectly:
 
 ```python
 
-from btsf import Metric, BinaryTimeSeriesFile, Type
+from btsf import Metric, BinaryTimeSeriesFile
 
 metrics = [
-    Metric('time', Type.Double),
-    Metric('power', Type.Float),
-    Metric('counter', Type.UInt64),
-    Metric('flags', Type.UInt8),
+    Metric('time', Metric.Type.Double),
+    Metric('power', Metric.Type.Float),
+    Metric('counter', Metric.Type.UInt64),
+    Metric('flags', Metric.Type.UInt8),
 ]
 
 with BinaryTimeSeriesFile.create('test.btsf', metrics) as f:

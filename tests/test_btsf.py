@@ -4,14 +4,14 @@ import math
 import tempfile
 import io
 
-from btsf import BinaryTimeSeriesFile, Metric, Type
+from btsf import BinaryTimeSeriesFile, Metric
 from btsf import IntroSection, IntroSectionHeader
 
 DEFAULT_METRICS = [
-    Metric('time', Type.Double),
-    Metric('power', Type.Float),
-    Metric('counter', Type.UInt64),
-    Metric('flags', Type.UInt8),
+    Metric('time', Metric.Type.Double),
+    Metric('power', Metric.Type.Float),
+    Metric('counter', Metric.Type.UInt64),
+    Metric('flags', Metric.Type.UInt8),
 ]
 
 VALID_TUPLES = [
@@ -46,7 +46,7 @@ class TestBinaryTimeSeriesFile(TestCase):
 
         # value too large to be represented as IEEE-754 32-bit floating point
         with tempfile.NamedTemporaryFile(suffix='.btsf') as tf:
-            metrics = [Metric('some_float', Type.Float)]
+            metrics = [Metric('some_float', Metric.Type.Float)]
             with BinaryTimeSeriesFile.create(tf.name, metrics) as f:
                 self.assertRaises(OverflowError, f.append, 9.9e200)
 
@@ -54,7 +54,7 @@ class TestBinaryTimeSeriesFile(TestCase):
         value = 200e200000000
         self.assertEqual(value, float('inf'))
         with tempfile.NamedTemporaryFile(suffix='.btsf') as tf:
-            metrics = [Metric('some_double', Type.Double)]
+            metrics = [Metric('some_double', Metric.Type.Double)]
             with BinaryTimeSeriesFile.create(tf.name, metrics) as f:
                 f.append(value)
                 self.assertEqual(value, f.last()[0])
@@ -63,7 +63,7 @@ class TestBinaryTimeSeriesFile(TestCase):
         value = float('nan')
         self.assertIsNaN(value)
         with tempfile.NamedTemporaryFile(suffix='.btsf') as tf:
-            metrics = [Metric('some_double', Type.Double)]
+            metrics = [Metric('some_double', Metric.Type.Double)]
             with BinaryTimeSeriesFile.create(tf.name, metrics) as f:
                 f.append(value)
                 self.assertIsNaN(f.last()[0])

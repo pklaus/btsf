@@ -54,7 +54,7 @@ class BinaryTimeSeriesFile():
         #now interpret the main header:
         f._metrics = [Metric(**m) for m in main_intro['metrics']]
         for m in f._metrics:
-            m.type = Type(m.type)
+            m.type = Metric.Type(m.type)
         f._struct_format = main_intro['struct_format']
         f._struct = struct.Struct(f._struct_format)
         f._struct_size = main_intro['struct_size']
@@ -220,16 +220,16 @@ class BinaryTimeSeriesFile():
         """
         import numpy as np
         np_dtype_map = {
-            Type.Double: self._byte_order + 'f8',
-            Type.Float:  self._byte_order + 'f4',
-            Type.Int8:   self._byte_order + 'i1',
-            Type.UInt8:  self._byte_order + 'u1',
-            Type.Int16:  self._byte_order + 'i2',
-            Type.UInt16: self._byte_order + 'u2',
-            Type.Int32:  self._byte_order + 'i4',
-            Type.UInt32: self._byte_order + 'u4',
-            Type.Int64:  self._byte_order + 'i8',
-            Type.UInt64: self._byte_order + 'u8',
+            Metric.Type.Double: self._byte_order + 'f8',
+            Metric.Type.Float:  self._byte_order + 'f4',
+            Metric.Type.Int8:   self._byte_order + 'i1',
+            Metric.Type.UInt8:  self._byte_order + 'u1',
+            Metric.Type.Int16:  self._byte_order + 'i2',
+            Metric.Type.UInt16: self._byte_order + 'u2',
+            Metric.Type.Int32:  self._byte_order + 'i4',
+            Metric.Type.UInt32: self._byte_order + 'u4',
+            Metric.Type.Int64:  self._byte_order + 'i8',
+            Metric.Type.UInt64: self._byte_order + 'u8',
         }
         dt = np.dtype({
             'names': (m.identifier for m in self.metrics),

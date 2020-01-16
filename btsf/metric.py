@@ -1,22 +1,23 @@
 import attr
 import enum
 
-__all__ = ["Type", "Metric"]
+__all__ = ["Metric"]
 
-class Type(enum.Enum):
-    Float = 'f'
-    Double = 'd'
-    Int8 = 'b'
-    UInt8 = 'B'
-    Int16 = 'h'
-    UInt16 = 'H'
-    Int32 = 'l'
-    UInt32 = 'L'
-    Int64 = 'q'
-    UInt64 = 'Q'
 
 @attr.s
 class Metric():
+
+    class Type(enum.Enum):
+        Float = 'f'
+        Double = 'd'
+        Int8 = 'b'
+        UInt8 = 'B'
+        Int16 = 'h'
+        UInt16 = 'H'
+        Int32 = 'l'
+        UInt32 = 'L'
+        Int64 = 'q'
+        UInt64 = 'Q'
 
     identifier = attr.ib()
     type = attr.ib(type=Type)
