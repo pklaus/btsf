@@ -19,21 +19,21 @@ class BinaryTimeSeriesFile():
         self._fdname = filename
         self._fd = None
 
-    @staticmethod
-    def openwrite(filename):
-        f = BinaryTimeSeriesFile._open(filename, mode='r+b')
+    @classmethod
+    def openwrite(cls, filename):
+        f = cls._open(filename, mode='r+b')
         f.seekend()
         return f
 
-    @staticmethod
-    def openread(filename):
-        return BinaryTimeSeriesFile._open(filename, mode='rb')
+    @classmethod
+    def openread(cls, filename):
+        return cls._open(filename, mode='rb')
 
-    @staticmethod
-    def _open(filename, mode):
+    @classmethod
+    def _open(cls, filename, mode):
         f = BinaryTimeSeriesFile(filename)
         f._fd = open(filename, mode)
-        if not f._fd.read(32).startswith(BinaryTimeSeriesFile.FILE_SIGNATURE):
+        if not f._fd.read(32).startswith(cls.FILE_SIGNATURE):
             raise UnknownFileError("File doesn't start with btsf file signature")
 
         # Read all intro sections (and advance file pointer to begin of actual data...)
@@ -64,10 +64,10 @@ class BinaryTimeSeriesFile():
 
         # round chunksize down to closest multiple of f._struct_size:
         # but f._struct_size is our minimum chunksize:
-        f._chunksize = max(BinaryTimeSeriesFile._chunksize // f._struct_size * f._struct_size, f._struct_size)
+        f._chunksize = max(cls._chunksize // f._struct_size * f._struct_size, f._struct_size)
 
         assert len(f._struct.unpack(b'\x00' * f._struct.size)) == len(f._metrics)
-        assert f._struct_format == BinaryTimeSeriesFile._assemble_struct(f._byte_order, f._metrics, f._pad_to)[0]
+        assert f._struct_format == cls._assemble_struct(f._byte_order, f._metrics, f._pad_to)[0]
 
         return f
 
@@ -82,7 +82,7 @@ class BinaryTimeSeriesFile():
 
     @property
     def _struct_padding(self):
-        return BinaryTimeSeriesFile._assemble_struct(
+        return self._assemble_struct(
             self._byte_order,
             self._metrics,
             self._pad_to)[1]
@@ -90,9 +90,9 @@ class BinaryTimeSeriesFile():
     def seekend(self):
         self._fd.seek(0, 2)    # SEEK_END
 
-    @staticmethod
-    def create(filename, metrics, byte_order='<', pad_to=8, further_intro_sections=None):
-        struct_format, struct_padding = BinaryTimeSeriesFile._assemble_struct(
+    @classmethod
+    def create(cls, filename, metrics, byte_order='<', pad_to=8, further_intro_sections=None):
+        struct_format, _ = cls._assemble_struct(
             byte_order, metrics, pad_to)
 
         f = BinaryTimeSeriesFile(filename)
@@ -106,7 +106,7 @@ class BinaryTimeSeriesFile():
         f._intro_sections = []
         f._populate_main_intro_section()
         f._intro_sections += further_intro_sections or []
-        f._chunksize = max(BinaryTimeSeriesFile._chunksize // f._struct_size * f._struct_size, f._struct_size)
+        f._chunksize = max(cls._chunksize // f._struct_size * f._struct_size, f._struct_size)
 
         f._fd = open(filename, 'w+b')
         f._write_file_signature()
@@ -136,7 +136,7 @@ class BinaryTimeSeriesFile():
         ish = IntroSectionHeader(
                 kind=IntroSectionHeader.Kind.MasterIntroSection,
                 payload_size = len(payload),
-                followup_size = -len(payload) % BinaryTimeSeriesFile.HEADER_PADDING
+                followup_size = -len(payload) % self.HEADER_PADDING
             )
         intro_section = IntroSection(header=ish, payload=payload)
         self._intro_sections.append(intro_section)
