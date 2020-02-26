@@ -39,7 +39,7 @@ class BinaryTimeSeriesFile():
         # Read all intro sections (and advance file pointer to begin of actual data...)
         f._intro_sections = []
         ish = IntroSectionHeader.load_from(f._fd)
-        while ish.kind != IntroSectionHeader.Kind.EndOfIntro:
+        while ish.type != IntroSectionType.EndOfIntro:
             intro_section = IntroSection(header=ish, payload=f._fd.read(ish.payload_size))
             f._intro_sections.append(intro_section)
             # advance file pointer according to next intro section header
@@ -48,7 +48,7 @@ class BinaryTimeSeriesFile():
         f._fd.seek(ish.followup_size, 1)
 
         # must start with Master Intro Section
-        assert f._intro_sections[0].header.kind == IntroSectionHeader.Kind.MasterIntroSection
+        assert f._intro_sections[0].header.type == IntroSectionType.MasterIntroSection
         main_intro = json.loads(f._intro_sections[0].payload.decode('utf-8'))
 
         #now interpret the main header:
@@ -134,7 +134,7 @@ class BinaryTimeSeriesFile():
         }
         payload = json.dumps(data).encode('utf-8')
         ish = IntroSectionHeader(
-                kind=IntroSectionHeader.Kind.MasterIntroSection,
+                type=IntroSectionType.MasterIntroSection,
                 payload_size = len(payload),
                 followup_size = -len(payload) % self.HEADER_PADDING
             )
@@ -152,7 +152,7 @@ class BinaryTimeSeriesFile():
 
     def _write_end_of_intro(self):
         self._write_single_intro_section(
-                IntroSection(IntroSectionHeader(kind=IntroSectionHeader.Kind.EndOfIntro))
+                IntroSection(IntroSectionHeader(type=IntroSectionType.EndOfIntro))
                 )
 
     def append(self, *values):

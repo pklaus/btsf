@@ -5,7 +5,7 @@ import tempfile
 import io
 
 from btsf import BinaryTimeSeriesFile, Metric, MetricType
-from btsf import IntroSection, IntroSectionHeader
+from btsf import IntroSection, IntroSectionHeader, IntroSectionType
 
 DEFAULT_METRICS = [
     Metric('time', MetricType.Double),
@@ -178,7 +178,7 @@ class TestBinaryTimeSeriesFile(TestCase):
         payload = json.dumps(annotations).encode('utf-8')
         annotation_intro = IntroSection(
             header=IntroSectionHeader(
-                kind=IntroSectionHeader.Kind.AnnotationsSection,
+                type=IntroSectionType.AnnotationsSection,
                 payload_size=len(payload),
                 followup_size=55,
             ),
