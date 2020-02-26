@@ -49,17 +49,17 @@ class BinaryTimeSeriesFile():
 
         # must start with Master Intro Section
         assert f._intro_sections[0].header.type == IntroSectionType.MasterIntroSection
-        main_intro = json.loads(f._intro_sections[0].payload.decode('utf-8'))
+        master_intro = json.loads(f._intro_sections[0].payload.decode('utf-8'))
 
-        #now interpret the main header:
-        f._metrics = [Metric(**m) for m in main_intro['metrics']]
+        #now interpret the master intro:
+        f._metrics = [Metric(**m) for m in master_intro['metrics']]
         for m in f._metrics:
             m.type = MetricType(m.type)
-        f._struct_format = main_intro['struct_format']
+        f._struct_format = master_intro['struct_format']
         f._struct = struct.Struct(f._struct_format)
-        f._struct_size = main_intro['struct_size']
-        f._byte_order = main_intro['byte_order']
-        f._pad_to = main_intro['pad_to']
+        f._struct_size = master_intro['struct_size']
+        f._byte_order = master_intro['byte_order']
+        f._pad_to = master_intro['pad_to']
         f._data_offset = f._fd.tell()
 
         # round chunksize down to closest multiple of f._struct_size:
@@ -104,7 +104,7 @@ class BinaryTimeSeriesFile():
         f._byte_order = byte_order
         f._pad_to = pad_to
         f._intro_sections = []
-        f._populate_main_intro_section()
+        f._populate_master_intro_section()
         f._intro_sections += further_intro_sections or []
         f._chunksize = max(cls._chunksize // f._struct_size * f._struct_size, f._struct_size)
 
@@ -122,7 +122,7 @@ class BinaryTimeSeriesFile():
     def _write_file_signature(self):
         self._fd.write(self.FILE_SIGNATURE)
 
-    def _populate_main_intro_section(self):
+    def _populate_master_intro_section(self):
         data = {
             'metrics': [m.to_dict() for m in self._metrics],
             'struct_format': self._struct_format,
