@@ -174,13 +174,14 @@ def test_write_further_intro():
         header=IntroSectionHeader(
             type=IntroSectionType.AnnotationsSection,
             payload_size=len(payload),
-            followup_size=55,
+            followup_size=-len(payload)%8,
         ),
         payload=payload
     )
     further_intro_sections = [annotation_intro]
     with BinaryTimeSeriesFile.create(tf.name, DEFAULT_METRICS,
-             intro_sections=further_intro_sections) as f:
+             intro_sections=further_intro_sections,
+             pad_to=8) as f:
         for t in VALID_TUPLES:
             f.append(*t)
         assert f.n_entries == len(VALID_TUPLES)

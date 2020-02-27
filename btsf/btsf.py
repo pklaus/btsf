@@ -93,9 +93,18 @@ class BinaryTimeSeriesFile():
         self._fd.seek(0, 2)    # SEEK_END
 
     @classmethod
+    def _validate_intro_section(cls, intro_section, pad_to):
+        if intro_section.header.total_size % pad_to:
+            raise InvalidIntroSection("size not aligned to %i bytes" % pad_to)
+
+    @classmethod
     def create(cls, filename: str, metrics: List[Metric],
                intro_sections: List[IntroSection] = None,
                byte_order: str = '<', pad_to: int = 8):
+
+        if intro_sections:
+            for intro_section in intro_sections:
+                cls._validate_intro_section(intro_section, pad_to)
 
         struct_format, _ = cls._assemble_struct(
             byte_order, metrics, pad_to)

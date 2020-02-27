@@ -16,3 +16,6 @@ class EmptyBtsfError(BtsfError):
 
 class InvalidFileContent(BtsfNameError):
     pass
+
+class InvalidIntroSection(BtsfNameError):
+    pass
