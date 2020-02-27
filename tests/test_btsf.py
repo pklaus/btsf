@@ -172,7 +172,7 @@ def test_write_further_intro():
     payload = json.dumps(annotations).encode('utf-8')
     annotation_intro = IntroSection(
         header=IntroSectionHeader(
-            type=IntroSectionType.AnnotationsSection,
+            type=IntroSectionType.Annotations,
             payload_size=len(payload),
             followup_size=-len(payload)%8,
         ),

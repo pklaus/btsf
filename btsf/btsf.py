@@ -50,7 +50,7 @@ class BinaryTimeSeriesFile():
         f._fd.seek(ish.followup_size, 1)
 
         # must start with Master Intro Section
-        assert f._intro_sections[0].header.type == IntroSectionType.MasterIntroSection
+        assert f._intro_sections[0].header.type == IntroSectionType.MasterIntro
         master_intro = json.loads(f._intro_sections[0].payload.decode('utf-8'))
 
         #now interpret the master intro:
@@ -148,7 +148,7 @@ class BinaryTimeSeriesFile():
         }
         payload = json.dumps(data).encode('utf-8')
         ish = IntroSectionHeader(
-                type=IntroSectionType.MasterIntroSection,
+                type=IntroSectionType.MasterIntro,
                 payload_size = len(payload),
                 followup_size = -len(payload) % self.HEADER_PADDING
             )

@@ -7,9 +7,9 @@ __all__ = ["IntroSectionHeader", "IntroSection", "IntroSectionType"]
 
 class IntroSectionType(enum.IntEnum):
     EndOfIntro = 0x0
-    MasterIntroSection = 0x1
-    AnnotationsSection = 0x2
-    GenericBinarySection = 0x3
+    MasterIntro = 0x1
+    Annotations = 0x2
+    GenericBinary = 0x3
 
 @attr.s
 class IntroSectionHeader():
