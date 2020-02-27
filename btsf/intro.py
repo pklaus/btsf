@@ -22,6 +22,10 @@ class IntroSectionHeader():
     def pack(self) -> bytes:
         return self.STRUCT.pack(self.type, self.payload_size, self.followup_size)
 
+    @property
+    def total_size(self):
+        return self.payload_size + self.followup_size
+
     @staticmethod
     def load_from(fd: io.IOBase):
         data = fd.read(IntroSectionHeader.STRUCT.size)
