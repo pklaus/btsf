@@ -35,6 +35,7 @@ setup(name='btsf',
       },
       install_requires = [
           "attrs",
+          "typing",
       ],
       keywords = 'Binary Time Series File Storage',
       classifiers = [

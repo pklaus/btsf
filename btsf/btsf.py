@@ -1,6 +1,8 @@
 import json
 import struct
 
+from typing import List
+
 from .exceptions import *
 from .metric import *
 from .intro import *
@@ -91,9 +93,10 @@ class BinaryTimeSeriesFile():
         self._fd.seek(0, 2)    # SEEK_END
 
     @classmethod
-    def create(cls, filename, metrics,
-               intro_sections=None,
-               byte_order='<', pad_to=8):
+    def create(cls, filename: str, metrics: List[Metric],
+               intro_sections: List[IntroSection] = None,
+               byte_order: str = '<', pad_to: int = 8):
+
         struct_format, _ = cls._assemble_struct(
             byte_order, metrics, pad_to)
 
