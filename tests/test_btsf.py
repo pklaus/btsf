@@ -6,6 +6,7 @@ import io
 
 from btsf import BinaryTimeSeriesFile, Metric, MetricType
 from btsf import IntroSection, IntroSectionHeader, IntroSectionType
+from btsf import InvalidIntroSection
 
 DEFAULT_METRICS = [
     Metric('time', MetricType.Double),
@@ -162,6 +163,22 @@ def test_write_and_read_on_same_instance():
         # test first() and last()
         assert tuples_approx_equal(VALID_TUPLES[0], f.first())
         assert tuples_approx_equal(VALID_TUPLES[-1], f.last())
+
+def test_invalid_further_intro():
+    tf = tempfile.NamedTemporaryFile(suffix='.btsf')
+
+    payload = b''
+    non_aligned_intro = IntroSection(
+        header=IntroSectionHeader(
+            type=IntroSectionType.GenericBinary,
+            payload_size=len(payload),
+            followup_size=3
+        ),
+        payload=payload
+    )
+    with raises(InvalidIntroSection):
+        f = BinaryTimeSeriesFile.create(tf.name, DEFAULT_METRICS,
+             intro_sections=[non_aligned_intro])
 
 def test_write_further_intro():
 
