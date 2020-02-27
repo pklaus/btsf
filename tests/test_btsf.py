@@ -1,5 +1,5 @@
-from unittest import TestCase
-from unittest.util import safe_repr
+from pytest import raises, approx
+
 import math
 import tempfile
 import io
@@ -40,224 +40,191 @@ VALID_TUPLES = [
     (-3.7206620809969885e-103, 4.17232506322307e-08, 0x1111111111111111, 0b10001000),
 ]
 
-class TestBinaryTimeSeriesFile(TestCase):
 
-    def test_append_invalid_values(self):
+def test_append_invalid_values():
 
-        # value too large to be represented as IEEE-754 32-bit floating point
-        with tempfile.NamedTemporaryFile(suffix='.btsf') as tf:
-            metrics = [Metric('some_float', MetricType.Float)]
-            with BinaryTimeSeriesFile.create(tf.name, metrics) as f:
-                self.assertRaises(OverflowError, f.append, 9.9e200)
+    # value too large to be represented as IEEE-754 32-bit floating point
+    with tempfile.NamedTemporaryFile(suffix='.btsf') as tf:
+        metrics = [Metric('some_float', MetricType.Float)]
+        with BinaryTimeSeriesFile.create(tf.name, metrics) as f:
+            with raises(OverflowError):
+                f.append(9.9e200)
 
-        # value too large to be represented as IEEE-754 64-bit floating point
-        value = 200e200000000
-        self.assertEqual(value, float('inf'))
-        with tempfile.NamedTemporaryFile(suffix='.btsf') as tf:
-            metrics = [Metric('some_double', MetricType.Double)]
-            with BinaryTimeSeriesFile.create(tf.name, metrics) as f:
-                f.append(value)
-                self.assertEqual(value, f.last()[0])
+    # value too large to be represented as IEEE-754 64-bit floating point
+    value = 200e200000000
+    assert value == float('inf')
+    with tempfile.NamedTemporaryFile(suffix='.btsf') as tf:
+        metrics = [Metric('some_double', MetricType.Double)]
+        with BinaryTimeSeriesFile.create(tf.name, metrics) as f:
+            f.append(value)
+            assert value == f.last()[0]
 
-        # NaN in IEEE-754 32-bit floating point
-        value = float('nan')
-        self.assertIsNaN(value)
-        with tempfile.NamedTemporaryFile(suffix='.btsf') as tf:
-            metrics = [Metric('some_double', MetricType.Double)]
-            with BinaryTimeSeriesFile.create(tf.name, metrics) as f:
-                f.append(value)
-                self.assertIsNaN(f.last()[0])
+    # NaN in IEEE-754 32-bit floating point
+    value = float('nan')
+    with tempfile.NamedTemporaryFile(suffix='.btsf') as tf:
+        metrics = [Metric('some_double', MetricType.Double)]
+        with BinaryTimeSeriesFile.create(tf.name, metrics) as f:
+            f.append(value)
+            assert math.isnan(f.last()[0])
 
-    def test_write_then_read(self):
+def test_write_then_read():
 
-        tf = tempfile.NamedTemporaryFile(suffix='.btsf')
+    tf = tempfile.NamedTemporaryFile(suffix='.btsf')
 
-        with BinaryTimeSeriesFile.create(tf.name, DEFAULT_METRICS) as f:
-            for t in VALID_TUPLES:
-                f.append(*t)
-            self.assertEqual(f.n_entries, len(VALID_TUPLES))
+    with BinaryTimeSeriesFile.create(tf.name, DEFAULT_METRICS) as f:
+        for t in VALID_TUPLES:
+            f.append(*t)
+        assert f.n_entries == len(VALID_TUPLES)
 
-            # check our implementation of __iter__()
-            self.assertEqual(len([t for t in f]), len(VALID_TUPLES))
-            # twice...
-            self.assertEqual(len([t for t in f]), len(VALID_TUPLES))
+        # check our implementation of __iter__()
+        assert len([t for t in f]) == len(VALID_TUPLES)
+        # twice...
+        assert len([t for t in f]) == len(VALID_TUPLES)
 
-            # check our implementation of __len__()
-            self.assertEqual(len(f), len(VALID_TUPLES))
+        # check our implementation of __len__()
+        assert len(f) == len(VALID_TUPLES)
 
-        # open the file again for reading only:
-        with BinaryTimeSeriesFile.openread(tf.name) as f:
-            # test if the file can be read back with its fundamental attributes
-            self.assertEqual(f._byte_order, '<')
-            self.assertEqual(f._struct_size, 24)
-            self.assertEqual(f._struct_format, '<dfQB3x')
-            self.assertEqual(len(f._metrics), 4)
+    # open the file again for reading only:
+    with BinaryTimeSeriesFile.openread(tf.name) as f:
+        # test if the file can be read back with its fundamental attributes
+        assert f._byte_order == '<'
+        assert f._struct_size == 24
+        assert f._struct_format == '<dfQB3x'
+        assert len(f._metrics) == 4
 
-            # check for goto_entry()
-            f.goto_entry(2)
+        # check for goto_entry()
+        f.goto_entry(2)
 
-            # check for __iter__()
-            for i, values in enumerate(f):
-                for written_val, read_val in zip(VALID_TUPLES[i], values):
-                    self.assertFloatAlmostEqual(written_val, read_val)
+        # check for __iter__()
+        for i, values in enumerate(f):
+            assert tuples_approx_equal(VALID_TUPLES[i], values)
 
-            # check for __getitem__():
-            for i, t in enumerate(VALID_TUPLES):
-                for written_val, read_val in zip(t, f[i]):
-                    self.assertFloatAlmostEqual(written_val, read_val)
+        # check for __getitem__():
+        for i, t in enumerate(VALID_TUPLES):
+            assert tuples_approx_equal(t, f[i])
 
-            # check we actually read the last value in our file
-            # using the __next__() method under the hood:
-            self.assertRaises(StopIteration, lambda: next(f))
+        # check we actually read the last value in our file
+        # using the __next__() method under the hood:
+        with raises(StopIteration):
+                next(f)
 
-            # file was opened for reading only
-            self.assertRaises(io.UnsupportedOperation, f.append, *VALID_TUPLES[0])
+        # file was opened for reading only
+        with raises(io.UnsupportedOperation):
+            f.append(*VALID_TUPLES[0])
 
-        # open the file again for appending (and reading)
-        with BinaryTimeSeriesFile.openwrite(tf.name) as f:
-            self.assertEqual(f._metrics, DEFAULT_METRICS)
+    # open the file again for appending (and reading)
+    with BinaryTimeSeriesFile.openwrite(tf.name) as f:
+        assert f._metrics == DEFAULT_METRICS
 
-            # append all data points again:
-            for t in VALID_TUPLES:
-                f.append(*t)
+        # append all data points again:
+        for t in VALID_TUPLES:
+            f.append(*t)
 
-        with BinaryTimeSeriesFile.openread(tf.name) as f:
-            for i, values in enumerate(f):
-                for written_val, read_val in zip(VALID_TUPLES[i % len(VALID_TUPLES)], values):
-                    self.assertFloatAlmostEqual(written_val, read_val)
-            self.assertRaises(StopIteration, lambda: next(f))
+    with BinaryTimeSeriesFile.openread(tf.name) as f:
+        for i, values in enumerate(f):
+            assert tuples_approx_equal(VALID_TUPLES[i % len(VALID_TUPLES)], values)
+        with raises(StopIteration):
+            next(f)
 
-    def test_write_and_read_on_same_instance(self):
+def test_write_and_read_on_same_instance():
 
-        tf = tempfile.NamedTemporaryFile(suffix='.btsf')
+    tf = tempfile.NamedTemporaryFile(suffix='.btsf')
 
-        with BinaryTimeSeriesFile.create(tf.name, DEFAULT_METRICS) as f:
+    with BinaryTimeSeriesFile.create(tf.name, DEFAULT_METRICS) as f:
 
-            # test proper creation and fundamental attributes
-            self.assertEqual(f._byte_order, '<')
-            self.assertEqual(f._struct_size, 24)
-            self.assertEqual(f._struct_format, '<dfQB3x')
-            self.assertEqual(len(f._metrics), 4)
+        # test proper creation and fundamental attributes
+        assert f._byte_order == '<'
+        assert f._struct_size == 24
+        assert f._struct_format == '<dfQB3x'
+        assert len(f._metrics) == 4
 
-            # test .n_entries when value != 0
-            self.assertEqual(f.n_entries, 0)
+        # test .n_entries when value != 0
+        assert f.n_entries == 0
 
-            for t in VALID_TUPLES:
-                f.append(*t)
+        for t in VALID_TUPLES:
+            f.append(*t)
 
-            # test .n_entries when value != 0
-            self.assertEqual(f.n_entries, len(VALID_TUPLES))
+        # test .n_entries when value != 0
+        assert f.n_entries == len(VALID_TUPLES)
 
-            # test .goto_entry() 2nd position and read the following two entries:
-            f.goto_entry(entry=1)
-            for wrote, got in zip(VALID_TUPLES[1], next(f)):
-                self.assertFloatAlmostEqual(wrote, got)
-            for wrote, got in zip(VALID_TUPLES[2], next(f)):
-                self.assertFloatAlmostEqual(wrote, got)
+        # test .goto_entry() 2nd position and read the following two entries:
+        f.goto_entry(entry=1)
+        assert tuples_approx_equal(VALID_TUPLES[1], next(f))
+        assert tuples_approx_equal(VALID_TUPLES[2], next(f))
 
-            # test reading back the full file:
-            for i, values in enumerate(f):
-                for written_val, read_val in zip(VALID_TUPLES[i], values):
-                    self.assertFloatAlmostEqual(wrote, got)
+        # test reading back the full file:
+        for i, values in enumerate(f):
+            assert tuples_approx_equal(VALID_TUPLES[i], values)
 
-            self.assertRaises(StopIteration, lambda: next(f))
+        with raises(StopIteration):
+            next(f)
 
-            # test first() and last()
-            for wrote, got in zip(VALID_TUPLES[0], f.first()):
-                self.assertFloatAlmostEqual(wrote, got)
+        # test first() and last()
+        assert tuples_approx_equal(VALID_TUPLES[0], f.first())
+        assert tuples_approx_equal(VALID_TUPLES[-1], f.last())
 
-            for wrote, got in zip(VALID_TUPLES[-1], f.last()):
-                self.assertFloatAlmostEqual(wrote, got)
+def test_write_further_intro():
 
-    def test_write_further_intro(self):
+    tf = tempfile.NamedTemporaryFile(suffix='.btsf')
 
-        tf = tempfile.NamedTemporaryFile(suffix='.btsf')
+    annotations = {}
+    import json
+    payload = json.dumps(annotations).encode('utf-8')
+    annotation_intro = IntroSection(
+        header=IntroSectionHeader(
+            type=IntroSectionType.AnnotationsSection,
+            payload_size=len(payload),
+            followup_size=55,
+        ),
+        payload=payload
+    )
+    further_intro_sections = [annotation_intro]
+    with BinaryTimeSeriesFile.create(tf.name, DEFAULT_METRICS,
+             intro_sections=further_intro_sections) as f:
+        for t in VALID_TUPLES:
+            f.append(*t)
+        assert f.n_entries == len(VALID_TUPLES)
 
-        annotations = {}
-        import json
-        payload = json.dumps(annotations).encode('utf-8')
-        annotation_intro = IntroSection(
-            header=IntroSectionHeader(
-                type=IntroSectionType.AnnotationsSection,
-                payload_size=len(payload),
-                followup_size=55,
-            ),
-            payload=payload
-        )
-        further_intro_sections = [annotation_intro]
-        with BinaryTimeSeriesFile.create(tf.name, DEFAULT_METRICS,
-                 further_intro_sections=further_intro_sections) as f:
-            for t in VALID_TUPLES:
-                f.append(*t)
-            self.assertEqual(f.n_entries, len(VALID_TUPLES))
+        # check our implementation of __iter__()
+        assert len([t for t in f]) == len(VALID_TUPLES)
+        # twice...
+        assert len([t for t in f]) == len(VALID_TUPLES)
 
-            # check our implementation of __iter__()
-            self.assertEqual(len([t for t in f]), len(VALID_TUPLES))
-            # twice...
-            self.assertEqual(len([t for t in f]), len(VALID_TUPLES))
+        # check our implementation of __len__()
+        assert len(f) == len(VALID_TUPLES)
 
-            # check our implementation of __len__()
-            self.assertEqual(len(f), len(VALID_TUPLES))
+    # open the file again for reading only:
+    with BinaryTimeSeriesFile.openread(tf.name) as f:
+        # test if the file can be read back with its fundamental attributes
+        assert f._byte_order == '<'
+        assert annotation_intro == f._intro_sections[1]
+        assert f._struct_size == 24
+        assert f._struct_format == '<dfQB3x'
+        assert len(f._metrics) == 4
 
-        # open the file again for reading only:
-        with BinaryTimeSeriesFile.openread(tf.name) as f:
-            # test if the file can be read back with its fundamental attributes
-            self.assertEqual(f._byte_order, '<')
-            self.assertEqual(annotation_intro, f._intro_sections[1])
-            self.assertEqual(f._struct_size, 24)
-            self.assertEqual(f._struct_format, '<dfQB3x')
-            self.assertEqual(len(f._metrics), 4)
+        # check for goto_entry()
+        f.goto_entry(2)
 
-            # check for goto_entry()
-            f.goto_entry(2)
+        # check for __iter__()
+        for i, values in enumerate(f):
+            assert tuples_approx_equal(VALID_TUPLES[i], values)
 
-            # check for __iter__()
-            for i, values in enumerate(f):
-                for written_val, read_val in zip(VALID_TUPLES[i], values):
-                    self.assertFloatAlmostEqual(written_val, read_val)
+        # check for __getitem__():
+        for i, t in enumerate(VALID_TUPLES):
+            assert tuples_approx_equal(t, f[i])
 
-            # check for __getitem__():
-            for i, t in enumerate(VALID_TUPLES):
-                for written_val, read_val in zip(t, f[i]):
-                    self.assertFloatAlmostEqual(written_val, read_val)
+        # check we actually read the last value in our file
+        # using the __next__() method under the hood:
+        with raises(StopIteration):
+            next(f)
 
-            # check we actually read the last value in our file
-            # using the __next__() method under the hood:
-            self.assertRaises(StopIteration, lambda: next(f))
-
-            # file was opened for reading only
-            self.assertRaises(io.UnsupportedOperation, f.append, *VALID_TUPLES[0])
+        # file was opened for reading only
+        with raises(io.UnsupportedOperation):
+            f.append(*VALID_TUPLES[0])
 
 
-
-    def assertIsNaN(self, value, msg=None):
-        """
-        Fail if provided value is not NaN
-        """
-        standardMsg = "%s is not NaN" % str(value)
-        try:
-            if not math.isnan(value):
-                self.fail(self._formatMessage(msg, standardMsg))
-        except:
-            self.fail(self._formatMessage(msg, standardMsg))
-
-    def assertFloatAlmostEqual(self, first, second, allowed_rel_dev=5e-8, msg=None):
-        """
-        allowed_rel_dev: relative deviation of the two from their arithmetic mean
-        """
-        if first == second:
-            return
-        if type(first) is float and type(second) is float:
-            if math.isnan(first) and math.isnan(second):
-                return
-            rel_dev = abs(first - second) *2 / (first + second)
-            #rel_dev = abs(first/second - 1) # this one would be sensitive to swapping first and second
-            if rel_dev <= allowed_rel_dev:
-                return
-            else:
-                standardMsg = '%s != %s within %s relative deviation (%s deviation)' % (
-                    safe_repr(first),
-                    safe_repr(second),
-                    safe_repr(allowed_rel_dev),
-                    safe_repr(rel_dev))
-                self.fail(self._formatMessage(msg, standardMsg))
+def tuples_approx_equal(tuple1, tuple2, rel=None, abs=None, nan_ok=True):
+    for v1, v2 in zip(tuple1, tuple2):
+        if v1 != approx(v2, rel=rel, abs=abs, nan_ok=nan_ok):
+            return False
+    return True
