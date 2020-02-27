@@ -36,7 +36,7 @@ class BinaryTimeSeriesFile():
         f = BinaryTimeSeriesFile(filename)
         f._fd = open(filename, mode)
         if not f._fd.read(32).startswith(cls.FILE_SIGNATURE):
-            raise UnknownFileError("File doesn't start with btsf file signature")
+            raise UnknownFile("File doesn't start with btsf file signature")
 
         # Read all intro sections (and advance file pointer to begin of actual data...)
         f._intro_sections = []
@@ -278,7 +278,7 @@ class BinaryTimeSeriesFile():
         n_data_bytes = end - start
 
         if n_data_bytes % self._struct_size != 0:
-            raise InvalidFileContentError(f'{n_data_bytes % self._struct_size} trailing bytes at the end of the file')
+            raise InvalidFileContent(f'{n_data_bytes % self._struct_size} trailing bytes at the end of the file')
         return n_data_bytes // self._struct_size
 
     def flush(self):

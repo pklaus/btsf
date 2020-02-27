@@ -5,7 +5,7 @@ class BtsfError(Exception):
 class BtsfNameError(NameError, BtsfError):
     pass
 
-class UnknownFileError(BtsfNameError):
+class UnknownFile(BtsfNameError):
     pass
 
 class NoFurtherData(StopIteration, BtsfError):
@@ -14,5 +14,5 @@ class NoFurtherData(StopIteration, BtsfError):
 class EmptyBtsfError(BtsfError):
     pass
 
-class InvalidFileContentError(BtsfNameError):
+class InvalidFileContent(BtsfNameError):
     pass
