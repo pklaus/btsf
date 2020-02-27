@@ -1,4 +1,4 @@
-from pytest import raises, approx
+from pytest import raises, approx as pytest_approx
 
 import math
 import tempfile
@@ -7,6 +7,10 @@ import io
 from btsf import BinaryTimeSeriesFile, Metric, MetricType
 from btsf import IntroSection, IntroSectionHeader, IntroSectionType
 from btsf import InvalidIntroSection
+
+def approx(*args, nan_ok=True, **kwargs):
+    """ custom variant of pytest.approx with nan_ok=True as default """
+    return pytest_approx(*args, nan_ok=nan_ok, **kwargs)
 
 DEFAULT_METRICS = [
     Metric('time', MetricType.Double),
@@ -98,11 +102,11 @@ def test_write_then_read():
 
         # check for __iter__()
         for i, values in enumerate(f):
-            assert tuples_approx_equal(VALID_TUPLES[i], values)
+            assert VALID_TUPLES[i] == approx(values)
 
         # check for __getitem__():
         for i, t in enumerate(VALID_TUPLES):
-            assert tuples_approx_equal(t, f[i])
+            assert t == approx(f[i])
 
         # check we actually read the last value in our file
         # using the __next__() method under the hood:
@@ -123,7 +127,7 @@ def test_write_then_read():
 
     with BinaryTimeSeriesFile.openread(tf.name) as f:
         for i, values in enumerate(f):
-            assert tuples_approx_equal(VALID_TUPLES[i % len(VALID_TUPLES)], values)
+            assert VALID_TUPLES[i % len(VALID_TUPLES)] == approx(values)
         with raises(StopIteration):
             next(f)
 
@@ -150,19 +154,19 @@ def test_write_and_read_on_same_instance():
 
         # test .goto_entry() 2nd position and read the following two entries:
         f.goto_entry(entry=1)
-        assert tuples_approx_equal(VALID_TUPLES[1], next(f))
-        assert tuples_approx_equal(VALID_TUPLES[2], next(f))
+        assert VALID_TUPLES[1] == approx(next(f))
+        assert VALID_TUPLES[2] == approx(next(f))
 
         # test reading back the full file:
         for i, values in enumerate(f):
-            assert tuples_approx_equal(VALID_TUPLES[i], values)
+            assert VALID_TUPLES[i] == approx(values)
 
         with raises(StopIteration):
             next(f)
 
         # test first() and last()
-        assert tuples_approx_equal(VALID_TUPLES[0], f.first())
-        assert tuples_approx_equal(VALID_TUPLES[-1], f.last())
+        assert VALID_TUPLES[0] == approx(f.first())
+        assert VALID_TUPLES[-1] == approx(f.last())
 
 def test_invalid_further_intro():
     tf = tempfile.NamedTemporaryFile(suffix='.btsf')
@@ -225,11 +229,11 @@ def test_write_further_intro():
 
         # check for __iter__()
         for i, values in enumerate(f):
-            assert tuples_approx_equal(VALID_TUPLES[i], values)
+            assert VALID_TUPLES[i] == approx(values)
 
         # check for __getitem__():
         for i, t in enumerate(VALID_TUPLES):
-            assert tuples_approx_equal(t, f[i])
+            assert t == approx(f[i])
 
         # check we actually read the last value in our file
         # using the __next__() method under the hood:
@@ -239,10 +243,3 @@ def test_write_further_intro():
         # file was opened for reading only
         with raises(io.UnsupportedOperation):
             f.append(*VALID_TUPLES[0])
-
-
-def tuples_approx_equal(tuple1, tuple2, rel=None, abs=None, nan_ok=True):
-    for v1, v2 in zip(tuple1, tuple2):
-        if v1 != approx(v2, rel=rel, abs=abs, nan_ok=nan_ok):
-            return False
-    return True
