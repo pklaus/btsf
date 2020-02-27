@@ -91,7 +91,9 @@ class BinaryTimeSeriesFile():
         self._fd.seek(0, 2)    # SEEK_END
 
     @classmethod
-    def create(cls, filename, metrics, byte_order='<', pad_to=8, further_intro_sections=None):
+    def create(cls, filename, metrics,
+               intro_sections=None,
+               byte_order='<', pad_to=8):
         struct_format, _ = cls._assemble_struct(
             byte_order, metrics, pad_to)
 
@@ -105,7 +107,7 @@ class BinaryTimeSeriesFile():
         f._pad_to = pad_to
         f._intro_sections = []
         f._populate_master_intro_section()
-        f._intro_sections += further_intro_sections or []
+        f._intro_sections += intro_sections or []
         f._chunksize = max(cls._chunksize // f._struct_size * f._struct_size, f._struct_size)
 
         f._fd = open(filename, 'w+b')
