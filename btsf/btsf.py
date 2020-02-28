@@ -256,9 +256,9 @@ class BinaryTimeSeriesFile:
         }
         dt = np.dtype(
             {
-                "names": (m.identifier for m in self.metrics),
-                "formats": (np_dtype_map[m.type] for m in self.metrics),
-                "titles": (f"{m.name} - {m.description}" for m in self.metrics),
+                "names": tuple(m.identifier for m in self.metrics),
+                "formats": tuple(np_dtype_map[m.type] for m in self.metrics),
+                # "titles": tuple(f"{m.name} - {m.description}" or None for m in self.metrics),
                 "itemsize": self._struct_size,
             }
         )
