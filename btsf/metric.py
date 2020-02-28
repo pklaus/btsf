@@ -5,16 +5,18 @@ __all__ = ["Metric", "MetricType"]
 
 
 class MetricType(enum.Enum):
-    Float = "f"
+    # fmt: off
+    Float =  "f"
     Double = "d"
-    Int8 = "b"
-    UInt8 = "B"
-    Int16 = "h"
+    Int8 =   "b"
+    UInt8 =  "B"
+    Int16 =  "h"
     UInt16 = "H"
-    Int32 = "l"
+    Int32 =  "l"
     UInt32 = "L"
-    Int64 = "q"
+    Int64 =  "q"
     UInt64 = "Q"
+    # fmt: on
 
 
 @attr.s
