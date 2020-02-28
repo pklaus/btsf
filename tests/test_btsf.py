@@ -8,9 +8,11 @@ from btsf import BinaryTimeSeriesFile, Metric, MetricType
 from btsf import IntroSection, IntroSectionHeader, IntroSectionType
 from btsf import InvalidIntroSection
 
+
 def approx(*args, nan_ok=True, **kwargs):
     """ custom variant of pytest.approx with nan_ok=True as default """
     return pytest_approx(*args, nan_ok=nan_ok, **kwargs)
+
 
 DEFAULT_METRICS = [
     Metric('time', MetricType.Double),
@@ -19,6 +21,7 @@ DEFAULT_METRICS = [
     Metric('flags', MetricType.UInt8),
 ]
 
+# fmt: off
 VALID_TUPLES = [
     # simple / straightforward examples:
     (     1.1,         2.2,         0xf0f0f0f0f0f0f0f0,          1),
@@ -44,6 +47,7 @@ VALID_TUPLES = [
     # double with 1010...      float with 00110011.. UInt64 obvious      Uint8 obvious
     (-3.7206620809969885e-103, 4.17232506322307e-08, 0x1111111111111111, 0b10001000),
 ]
+# fmt: on
 
 
 def test_append_invalid_values():
@@ -71,6 +75,7 @@ def test_append_invalid_values():
         with BinaryTimeSeriesFile.create(tf.name, metrics) as f:
             f.append(value)
             assert math.isnan(f.last()[0])
+
 
 def test_write_then_read():
 
@@ -111,7 +116,7 @@ def test_write_then_read():
         # check we actually read the last value in our file
         # using the __next__() method under the hood:
         with raises(StopIteration):
-                next(f)
+            next(f)
 
         # file was opened for reading only
         with raises(io.UnsupportedOperation):
@@ -130,6 +135,7 @@ def test_write_then_read():
             assert VALID_TUPLES[i % len(VALID_TUPLES)] == approx(values)
         with raises(StopIteration):
             next(f)
+
 
 def test_write_and_read_on_same_instance():
 
@@ -168,6 +174,7 @@ def test_write_and_read_on_same_instance():
         assert VALID_TUPLES[0] == approx(f.first())
         assert VALID_TUPLES[-1] == approx(f.last())
 
+
 def test_invalid_further_intro():
     tf = tempfile.NamedTemporaryFile(suffix='.btsf')
 
@@ -176,13 +183,15 @@ def test_invalid_further_intro():
         header=IntroSectionHeader(
             type=IntroSectionType.GenericBinary,
             payload_size=len(payload),
-            followup_size=3
+            followup_size=3,
         ),
-        payload=payload
+        payload=payload,
     )
     with raises(InvalidIntroSection):
-        f = BinaryTimeSeriesFile.create(tf.name, DEFAULT_METRICS,
-             intro_sections=[non_aligned_intro])
+        f = BinaryTimeSeriesFile.create(
+            tf.name, DEFAULT_METRICS, intro_sections=[non_aligned_intro]
+        )
+
 
 def test_write_further_intro():
 
@@ -190,19 +199,20 @@ def test_write_further_intro():
 
     annotations = {}
     import json
+
     payload = json.dumps(annotations).encode('utf-8')
     annotation_intro = IntroSection(
         header=IntroSectionHeader(
             type=IntroSectionType.Annotations,
             payload_size=len(payload),
-            followup_size=-len(payload)%8,
+            followup_size=-len(payload) % 8,
         ),
-        payload=payload
+        payload=payload,
     )
     further_intro_sections = [annotation_intro]
-    with BinaryTimeSeriesFile.create(tf.name, DEFAULT_METRICS,
-             intro_sections=further_intro_sections,
-             pad_to=8) as f:
+    with BinaryTimeSeriesFile.create(
+        tf.name, DEFAULT_METRICS, intro_sections=further_intro_sections, pad_to=8
+    ) as f:
         for t in VALID_TUPLES:
             f.append(*t)
         assert f.n_entries == len(VALID_TUPLES)

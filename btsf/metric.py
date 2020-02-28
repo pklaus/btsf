@@ -3,6 +3,7 @@ import enum
 
 __all__ = ["Metric", "MetricType"]
 
+
 class MetricType(enum.Enum):
     Float = 'f'
     Double = 'd'
@@ -15,8 +16,9 @@ class MetricType(enum.Enum):
     Int64 = 'q'
     UInt64 = 'Q'
 
+
 @attr.s
-class Metric():
+class Metric:
     identifier = attr.ib()
     type = attr.ib(type=MetricType)
     name = attr.ib(default='', type=str)
@@ -28,11 +30,11 @@ class Metric():
         d = attr.asdict(self)
         d['type'] = self.type.value
         return d
-        #return {
+        # return {
         #    'identifier': self.identifier,
         #    'type': self.type.value,
         #    'name': self.name,
         #    'unit': self.unit,
         #    'description': self.description,
         #    'is_time': self.is_time,
-        #}
+        # }

@@ -5,14 +5,16 @@ import struct
 
 __all__ = ["IntroSectionHeader", "IntroSection", "IntroSectionType"]
 
+
 class IntroSectionType(enum.IntEnum):
     EndOfIntro = 0x0
     MasterIntro = 0x1
     Annotations = 0x2
     GenericBinary = 0x3
 
+
 @attr.s
-class IntroSectionHeader():
+class IntroSectionHeader:
 
     STRUCT = struct.Struct('<B7xLL')
 
@@ -33,7 +35,8 @@ class IntroSectionHeader():
         type, payload_size, followup_size = IntroSectionHeader.STRUCT.unpack(data)
         return IntroSectionHeader(type, payload_size, followup_size)
 
+
 @attr.s
-class IntroSection():
+class IntroSection:
     header = attr.ib(type=IntroSectionHeader)
     payload = attr.ib(type=bytes, default=b'')
