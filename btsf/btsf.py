@@ -1,11 +1,10 @@
 import json
 import struct
-
 from typing import List
 
 from .exceptions import *
-from .metric import *
 from .intro import *
+from .metric import *
 
 __all__ = ["BinaryTimeSeriesFile"]
 

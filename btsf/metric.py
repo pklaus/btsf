@@ -1,5 +1,6 @@
-import attr
 import enum
+
+import attr
 
 __all__ = ["Metric", "MetricType"]
 

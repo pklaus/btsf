@@ -1,7 +1,8 @@
-import attr
 import enum
 import io
 import struct
+
+import attr
 
 __all__ = ["IntroSectionHeader", "IntroSection", "IntroSectionType"]
 
