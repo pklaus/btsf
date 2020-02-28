@@ -8,7 +8,7 @@ def info(args):
         print(f"{args.btsf_file} - Number of entries: {f.n_entries}")
         print(f"Metrics:")
         print(
-            '   '.join(f"{metric.identifier} ({metric.type})" for metric in f.metrics)
+            "   ".join(f"{metric.identifier} ({metric.type})" for metric in f.metrics)
         )
         if args.f or args.l and f.n_entries:
             if (args.f + args.l) < f.n_entries:
@@ -33,19 +33,19 @@ def export(args):
         f"Exporting {args.btsf_file} to {args.out_file.name} (format: {args.format})\n"
     )
     with BinaryTimeSeriesFile.openread(args.btsf_file) as f:
-        if args.format == 'csv':
+        if args.format == "csv":
             args.out_file.write(
-                '; '.join(f"{metric.identifier}" for metric in f.metrics) + '\n'
+                "; ".join(f"{metric.identifier}" for metric in f.metrics) + "\n"
             )
             for values in f:
-                args.out_file.write('; '.join(str(v) for v in values) + '\n')
-        elif args.format == 'tabular':
+                args.out_file.write("; ".join(str(v) for v in values) + "\n")
+        elif args.format == "tabular":
             args.out_file.write(
-                ' '.join('{:20.20s}'.format(m.identifier) for m in f.metrics) + '\n'
+                " ".join("{:20.20s}".format(m.identifier) for m in f.metrics) + "\n"
             )
             for values in f:
                 args.out_file.write(
-                    ' '.join('{:20.20}'.format(str(v)) for v in values) + '\n'
+                    " ".join("{:20.20}".format(str(v)) for v in values) + "\n"
                 )
         else:
             raise NotImplementedError
@@ -57,23 +57,23 @@ def main():
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers()
 
-    info_parser = subparsers.add_parser('info')
+    info_parser = subparsers.add_parser("info")
     info_parser.add_argument(
-        '-f', default=5, type=int, metavar='n', help="print first n entries"
+        "-f", default=5, type=int, metavar="n", help="print first n entries"
     )
     info_parser.add_argument(
-        '-l', default=5, type=int, metavar='n', help="print last n entries"
+        "-l", default=5, type=int, metavar="n", help="print last n entries"
     )
-    info_parser.add_argument('btsf_file')
+    info_parser.add_argument("btsf_file")
     info_parser.set_defaults(func=info)
 
-    export_parser = subparsers.add_parser('export')
+    export_parser = subparsers.add_parser("export")
     export_parser.add_argument(
-        '--format', '-f', choices=('tabular', 'csv'), default='tabular'
+        "--format", "-f", choices=("tabular", "csv"), default="tabular"
     )
-    export_parser.add_argument('btsf_file')
+    export_parser.add_argument("btsf_file")
     export_parser.add_argument(
-        'out_file', type=argparse.FileType('w'), default='-', nargs='?'
+        "out_file", type=argparse.FileType("w"), default="-", nargs="?"
     )
     export_parser.set_defaults(func=export)
 

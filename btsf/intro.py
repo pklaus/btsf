@@ -16,7 +16,7 @@ class IntroSectionType(enum.IntEnum):
 @attr.s
 class IntroSectionHeader:
 
-    STRUCT = struct.Struct('<B7xLL')
+    STRUCT = struct.Struct("<B7xLL")
 
     type = attr.ib(type=int, default=IntroSectionType.EndOfIntro)
     payload_size = attr.ib(type=int, default=0)
@@ -39,4 +39,4 @@ class IntroSectionHeader:
 @attr.s
 class IntroSection:
     header = attr.ib(type=IntroSectionHeader)
-    payload = attr.ib(type=bytes, default=b'')
+    payload = attr.ib(type=bytes, default=b"")

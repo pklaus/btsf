@@ -15,10 +15,10 @@ def approx(*args, nan_ok=True, **kwargs):
 
 
 DEFAULT_METRICS = [
-    Metric('time', MetricType.Double),
-    Metric('power', MetricType.Float),
-    Metric('counter', MetricType.UInt64),
-    Metric('flags', MetricType.UInt8),
+    Metric("time", MetricType.Double),
+    Metric("power", MetricType.Float),
+    Metric("counter", MetricType.UInt64),
+    Metric("flags", MetricType.UInt8),
 ]
 
 # fmt: off
@@ -53,25 +53,25 @@ VALID_TUPLES = [
 def test_append_invalid_values():
 
     # value too large to be represented as IEEE-754 32-bit floating point
-    with tempfile.NamedTemporaryFile(suffix='.btsf') as tf:
-        metrics = [Metric('some_float', MetricType.Float)]
+    with tempfile.NamedTemporaryFile(suffix=".btsf") as tf:
+        metrics = [Metric("some_float", MetricType.Float)]
         with BinaryTimeSeriesFile.create(tf.name, metrics) as f:
             with raises(OverflowError):
                 f.append(9.9e200)
 
     # value too large to be represented as IEEE-754 64-bit floating point
     value = 200e200000000
-    assert value == float('inf')
-    with tempfile.NamedTemporaryFile(suffix='.btsf') as tf:
-        metrics = [Metric('some_double', MetricType.Double)]
+    assert value == float("inf")
+    with tempfile.NamedTemporaryFile(suffix=".btsf") as tf:
+        metrics = [Metric("some_double", MetricType.Double)]
         with BinaryTimeSeriesFile.create(tf.name, metrics) as f:
             f.append(value)
             assert value == f.last()[0]
 
     # NaN in IEEE-754 32-bit floating point
-    value = float('nan')
-    with tempfile.NamedTemporaryFile(suffix='.btsf') as tf:
-        metrics = [Metric('some_double', MetricType.Double)]
+    value = float("nan")
+    with tempfile.NamedTemporaryFile(suffix=".btsf") as tf:
+        metrics = [Metric("some_double", MetricType.Double)]
         with BinaryTimeSeriesFile.create(tf.name, metrics) as f:
             f.append(value)
             assert math.isnan(f.last()[0])
@@ -79,7 +79,7 @@ def test_append_invalid_values():
 
 def test_write_then_read():
 
-    tf = tempfile.NamedTemporaryFile(suffix='.btsf')
+    tf = tempfile.NamedTemporaryFile(suffix=".btsf")
 
     with BinaryTimeSeriesFile.create(tf.name, DEFAULT_METRICS) as f:
         for t in VALID_TUPLES:
@@ -97,9 +97,9 @@ def test_write_then_read():
     # open the file again for reading only:
     with BinaryTimeSeriesFile.openread(tf.name) as f:
         # test if the file can be read back with its fundamental attributes
-        assert f._byte_order == '<'
+        assert f._byte_order == "<"
         assert f._struct_size == 24
-        assert f._struct_format == '<dfQB3x'
+        assert f._struct_format == "<dfQB3x"
         assert len(f._metrics) == 4
 
         # check for goto_entry()
@@ -139,14 +139,14 @@ def test_write_then_read():
 
 def test_write_and_read_on_same_instance():
 
-    tf = tempfile.NamedTemporaryFile(suffix='.btsf')
+    tf = tempfile.NamedTemporaryFile(suffix=".btsf")
 
     with BinaryTimeSeriesFile.create(tf.name, DEFAULT_METRICS) as f:
 
         # test proper creation and fundamental attributes
-        assert f._byte_order == '<'
+        assert f._byte_order == "<"
         assert f._struct_size == 24
-        assert f._struct_format == '<dfQB3x'
+        assert f._struct_format == "<dfQB3x"
         assert len(f._metrics) == 4
 
         # test .n_entries when value != 0
@@ -176,9 +176,9 @@ def test_write_and_read_on_same_instance():
 
 
 def test_invalid_further_intro():
-    tf = tempfile.NamedTemporaryFile(suffix='.btsf')
+    tf = tempfile.NamedTemporaryFile(suffix=".btsf")
 
-    payload = b''
+    payload = b""
     non_aligned_intro = IntroSection(
         header=IntroSectionHeader(
             type=IntroSectionType.GenericBinary,
@@ -195,12 +195,12 @@ def test_invalid_further_intro():
 
 def test_write_further_intro():
 
-    tf = tempfile.NamedTemporaryFile(suffix='.btsf')
+    tf = tempfile.NamedTemporaryFile(suffix=".btsf")
 
     annotations = {}
     import json
 
-    payload = json.dumps(annotations).encode('utf-8')
+    payload = json.dumps(annotations).encode("utf-8")
     annotation_intro = IntroSection(
         header=IntroSectionHeader(
             type=IntroSectionType.Annotations,
@@ -228,10 +228,10 @@ def test_write_further_intro():
     # open the file again for reading only:
     with BinaryTimeSeriesFile.openread(tf.name) as f:
         # test if the file can be read back with its fundamental attributes
-        assert f._byte_order == '<'
+        assert f._byte_order == "<"
         assert annotation_intro == f._intro_sections[1]
         assert f._struct_size == 24
-        assert f._struct_format == '<dfQB3x'
+        assert f._struct_format == "<dfQB3x"
         assert len(f._metrics) == 4
 
         # check for goto_entry()

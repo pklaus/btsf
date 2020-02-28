@@ -7,12 +7,12 @@ from .exceptions import *
 from .metric import *
 from .intro import *
 
-__all__ = ['BinaryTimeSeriesFile']
+__all__ = ["BinaryTimeSeriesFile"]
 
 
 class BinaryTimeSeriesFile:
 
-    FILE_SIGNATURE = b'BinaryTimeSeriesFile_v0.1\x00\x00\x00\x00\x00\x00\x00'
+    FILE_SIGNATURE = b"BinaryTimeSeriesFile_v0.1\x00\x00\x00\x00\x00\x00\x00"
     HEADER_PADDING = 8
 
     _chunksize = 256
@@ -24,13 +24,13 @@ class BinaryTimeSeriesFile:
 
     @classmethod
     def openwrite(cls, filename):
-        f = cls._open(filename, mode='r+b')
+        f = cls._open(filename, mode="r+b")
         f.seekend()
         return f
 
     @classmethod
     def openread(cls, filename):
-        return cls._open(filename, mode='rb')
+        return cls._open(filename, mode="rb")
 
     @classmethod
     def _open(cls, filename, mode):
@@ -54,17 +54,17 @@ class BinaryTimeSeriesFile:
 
         # must start with Master Intro Section
         assert f._intro_sections[0].header.type == IntroSectionType.MasterIntro
-        master_intro = json.loads(f._intro_sections[0].payload.decode('utf-8'))
+        master_intro = json.loads(f._intro_sections[0].payload.decode("utf-8"))
 
         # now interpret the master intro:
-        f._metrics = [Metric(**m) for m in master_intro['metrics']]
+        f._metrics = [Metric(**m) for m in master_intro["metrics"]]
         for m in f._metrics:
             m.type = MetricType(m.type)
-        f._struct_format = master_intro['struct_format']
+        f._struct_format = master_intro["struct_format"]
         f._struct = struct.Struct(f._struct_format)
-        f._struct_size = master_intro['struct_size']
-        f._byte_order = master_intro['byte_order']
-        f._pad_to = master_intro['pad_to']
+        f._struct_size = master_intro["struct_size"]
+        f._byte_order = master_intro["byte_order"]
+        f._pad_to = master_intro["pad_to"]
         f._data_offset = f._fd.tell()
 
         # round chunksize down to closest multiple of f._struct_size:
@@ -73,7 +73,7 @@ class BinaryTimeSeriesFile:
             cls._chunksize // f._struct_size * f._struct_size, f._struct_size
         )
 
-        assert len(f._struct.unpack(b'\x00' * f._struct.size)) == len(f._metrics)
+        assert len(f._struct.unpack(b"\x00" * f._struct.size)) == len(f._metrics)
         assert (
             f._struct_format
             == cls._assemble_struct(f._byte_order, f._metrics, f._pad_to)[0]
@@ -83,11 +83,11 @@ class BinaryTimeSeriesFile:
 
     @staticmethod
     def _assemble_struct(byte_order, metrics, pad_to=None):
-        struct_format = byte_order + ''.join(m.type.value for m in metrics)
+        struct_format = byte_order + "".join(m.type.value for m in metrics)
         if pad_to:
             size = struct.calcsize(struct_format)
             struct_padding = -size % pad_to
-            struct_format += '%dx' % struct_padding
+            struct_format += "%dx" % struct_padding
         return struct_format, struct_padding
 
     @property
@@ -108,7 +108,7 @@ class BinaryTimeSeriesFile:
         filename: str,
         metrics: List[Metric],
         intro_sections: List[IntroSection] = None,
-        byte_order: str = '<',
+        byte_order: str = "<",
         pad_to: int = 8,
     ):
 
@@ -133,7 +133,7 @@ class BinaryTimeSeriesFile:
             cls._chunksize // f._struct_size * f._struct_size, f._struct_size
         )
 
-        f._fd = open(filename, 'w+b')
+        f._fd = open(filename, "w+b")
         f._write_file_signature()
         f._write_all_intro_sections()
         f._write_end_of_intro()
@@ -149,15 +149,15 @@ class BinaryTimeSeriesFile:
 
     def _populate_master_intro_section(self):
         data = {
-            'metrics': [m.to_dict() for m in self._metrics],
-            'struct_format': self._struct_format,
-            'struct_size': self._struct_size,
-            'byte_order': self._byte_order,
-            'pad_to': self._pad_to,
-            'struct_padding': self._struct_padding,
-            'file_version': 0.1,
+            "metrics": [m.to_dict() for m in self._metrics],
+            "struct_format": self._struct_format,
+            "struct_size": self._struct_size,
+            "byte_order": self._byte_order,
+            "pad_to": self._pad_to,
+            "struct_padding": self._struct_padding,
+            "file_version": 0.1,
         }
-        payload = json.dumps(data).encode('utf-8')
+        payload = json.dumps(data).encode("utf-8")
         ish = IntroSectionHeader(
             type=IntroSectionType.MasterIntro,
             payload_size=len(payload),
@@ -169,7 +169,7 @@ class BinaryTimeSeriesFile:
     def _write_single_intro_section(self, intro_section: IntroSection):
         self._fd.write(intro_section.header.pack())
         self._fd.write(intro_section.payload)
-        self._fd.write(b'\x00' * intro_section.header.followup_size)
+        self._fd.write(b"\x00" * intro_section.header.followup_size)
 
     def _write_all_intro_sections(self):
         for intro_section in self._intro_sections:
@@ -209,7 +209,7 @@ class BinaryTimeSeriesFile:
             self.goto_entry(entry=i)
             return next(self)
         raise IndexError(
-            'Index i={} out of range ({})'.format(i, range(self.n_entries))
+            "Index i={} out of range ({})".format(i, range(self.n_entries))
         )
 
     def __len__(self):
@@ -238,7 +238,7 @@ class BinaryTimeSeriesFile:
         assert entry < self.n_entries
         self._fd.seek(self._data_offset + entry * self._struct_size)
 
-    def to_numpy(self, output='structured'):
+    def to_numpy(self, output="structured"):
         """
         output: ('structured', 'columns')
         relevant numpy documentation:
@@ -248,30 +248,30 @@ class BinaryTimeSeriesFile:
         import numpy as np
 
         np_dtype_map = {
-            MetricType.Double: self._byte_order + 'f8',
-            MetricType.Float: self._byte_order + 'f4',
-            MetricType.Int8: self._byte_order + 'i1',
-            MetricType.UInt8: self._byte_order + 'u1',
-            MetricType.Int16: self._byte_order + 'i2',
-            MetricType.UInt16: self._byte_order + 'u2',
-            MetricType.Int32: self._byte_order + 'i4',
-            MetricType.UInt32: self._byte_order + 'u4',
-            MetricType.Int64: self._byte_order + 'i8',
-            MetricType.UInt64: self._byte_order + 'u8',
+            MetricType.Double: self._byte_order + "f8",
+            MetricType.Float: self._byte_order + "f4",
+            MetricType.Int8: self._byte_order + "i1",
+            MetricType.UInt8: self._byte_order + "u1",
+            MetricType.Int16: self._byte_order + "i2",
+            MetricType.UInt16: self._byte_order + "u2",
+            MetricType.Int32: self._byte_order + "i4",
+            MetricType.UInt32: self._byte_order + "u4",
+            MetricType.Int64: self._byte_order + "i8",
+            MetricType.UInt64: self._byte_order + "u8",
         }
         dt = np.dtype(
             {
-                'names': (m.identifier for m in self.metrics),
-                'formats': (np_dtype_map[m.type] for m in self.metrics),
-                'titles': (f"{m.name} - {m.description}" for m in self.metrics),
-                'itemsize': self._struct_size,
+                "names": (m.identifier for m in self.metrics),
+                "formats": (np_dtype_map[m.type] for m in self.metrics),
+                "titles": (f"{m.name} - {m.description}" for m in self.metrics),
+                "itemsize": self._struct_size,
             }
         )
         self.goto_entry(entry=0)
         a = np.fromfile(self._fd, dtype=dt, offset=0)
-        if output == 'structured':
+        if output == "structured":
             return a
-        if output == 'columns':
+        if output == "columns":
             return (a[name] for name in a.dtype.names)
 
     def to_pandas(self, index_metric=None):
@@ -285,11 +285,11 @@ class BinaryTimeSeriesFile:
         df = pd.DataFrame.from_records(a)
         index_column_name = None
         for m in self._metrics:
-            if m == index_metric or (index_metric == 'time' and m.is_time):
+            if m == index_metric or (index_metric == "time" and m.is_time):
                 index_column_name = m.identifier
                 break
         if index_metric and not index_column_name:
-            raise BtsfNameError('requested index metric not found in the data')
+            raise BtsfNameError("requested index metric not found in the data")
         if index_column_name:
             df.set_index(index_column_name, inplace=True)
         return df
@@ -305,7 +305,7 @@ class BinaryTimeSeriesFile:
 
         if n_data_bytes % self._struct_size != 0:
             raise InvalidFileContent(
-                f'{n_data_bytes % self._struct_size} trailing bytes at the end of the file'
+                f"{n_data_bytes % self._struct_size} trailing bytes at the end of the file"
             )
         return n_data_bytes // self._struct_size
 

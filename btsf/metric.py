@@ -5,30 +5,30 @@ __all__ = ["Metric", "MetricType"]
 
 
 class MetricType(enum.Enum):
-    Float = 'f'
-    Double = 'd'
-    Int8 = 'b'
-    UInt8 = 'B'
-    Int16 = 'h'
-    UInt16 = 'H'
-    Int32 = 'l'
-    UInt32 = 'L'
-    Int64 = 'q'
-    UInt64 = 'Q'
+    Float = "f"
+    Double = "d"
+    Int8 = "b"
+    UInt8 = "B"
+    Int16 = "h"
+    UInt16 = "H"
+    Int32 = "l"
+    UInt32 = "L"
+    Int64 = "q"
+    UInt64 = "Q"
 
 
 @attr.s
 class Metric:
     identifier = attr.ib()
     type = attr.ib(type=MetricType)
-    name = attr.ib(default='', type=str)
-    unit = attr.ib(default='', type=str)
-    description = attr.ib(default='', type=str)
+    name = attr.ib(default="", type=str)
+    unit = attr.ib(default="", type=str)
+    description = attr.ib(default="", type=str)
     is_time = attr.ib(default=False, type=bool)
 
     def to_dict(self):
         d = attr.asdict(self)
-        d['type'] = self.type.value
+        d["type"] = self.type.value
         return d
         # return {
         #    'identifier': self.identifier,
