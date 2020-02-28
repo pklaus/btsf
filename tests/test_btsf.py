@@ -181,9 +181,7 @@ def test_invalid_further_intro():
     payload = b""
     non_aligned_intro = IntroSection(
         header=IntroSectionHeader(
-            type=IntroSectionType.GenericBinary,
-            payload_size=len(payload),
-            followup_size=3,
+            type=IntroSectionType.GenericBinary, payload_size=len(payload), followup_size=3,
         ),
         payload=payload,
     )

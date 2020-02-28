@@ -7,9 +7,7 @@ def info(args):
     with BinaryTimeSeriesFile.openread(args.btsf_file) as f:
         print(f"{args.btsf_file} - Number of entries: {f.n_entries}")
         print(f"Metrics:")
-        print(
-            "   ".join(f"{metric.identifier} ({metric.type})" for metric in f.metrics)
-        )
+        print("   ".join(f"{metric.identifier} ({metric.type})" for metric in f.metrics))
         if args.f or args.l and f.n_entries:
             if (args.f + args.l) < f.n_entries:
                 print(f"first {args.f} entries:")

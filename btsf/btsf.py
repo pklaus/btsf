@@ -43,9 +43,7 @@ class BinaryTimeSeriesFile:
         f._intro_sections = []
         ish = IntroSectionHeader.load_from(f._fd)
         while ish.type != IntroSectionType.EndOfIntro:
-            intro_section = IntroSection(
-                header=ish, payload=f._fd.read(ish.payload_size)
-            )
+            intro_section = IntroSection(header=ish, payload=f._fd.read(ish.payload_size))
             f._intro_sections.append(intro_section)
             # advance file pointer according to next intro section header
             f._fd.seek(ish.followup_size, 1)
@@ -208,9 +206,7 @@ class BinaryTimeSeriesFile:
         if 0 <= i < self.n_entries:
             self.goto_entry(entry=i)
             return next(self)
-        raise IndexError(
-            "Index i={} out of range ({})".format(i, range(self.n_entries))
-        )
+        raise IndexError("Index i={} out of range ({})".format(i, range(self.n_entries)))
 
     def __len__(self):
         return self.n_entries
