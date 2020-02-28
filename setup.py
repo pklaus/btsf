@@ -31,7 +31,7 @@ setup(
         "to_pandas": ["numpy", "pandas"],
         "tests": ["pytest"],
     },
-    install_requires=["attrs", "typing",],
+    install_requires=["attrs"],
     keywords="Binary Time Series File Storage",
     classifiers=[
         "Development Status :: 4 - Beta",
