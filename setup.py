@@ -2,21 +2,18 @@
 
 from setuptools import setup
 
-try:
-    import pypandoc
-
-    LDESC = open("README.md", "r").read()
-    LDESC = pypandoc.convert(LDESC, "rst", format="md")
-except (ImportError, IOError, RuntimeError) as e:
-    print("Could not create long description:")
-    print(str(e))
-    LDESC = ""
+# read the contents of your README file
+from os import path
+this_directory = path.abspath(path.dirname(__file__))
+with open(path.join(this_directory, 'README.md'), encoding='utf-8') as f:
+        LDESC = f.read()
 
 setup(
     name="btsf",
     version="1.0.dev0",
     description="btsf (for Binary Time Series File) is a package to store your data in a condensed and fast yet flexible way.",
     long_description=LDESC,
+    long_description_content_type='text/markdown',
     author="Philipp Klaus",
     author_email="philipp.l.klaus@web.de",
     url="https://github.com/pklaus/btsf",
