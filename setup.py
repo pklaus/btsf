@@ -25,7 +25,7 @@ setup(
     platforms="any",
     extras_require={
         "to_numpy": ["numpy"],
-        "to_pandas": ["numpy", "pandas"],
+        "to_pandas": ["pandas"],
         "tests": ["pytest"],
     },
     install_requires=["attrs"],
