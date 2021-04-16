@@ -14,7 +14,7 @@ except (ImportError, IOError, RuntimeError) as e:
 
 setup(
     name="btsf",
-    version="0.1dev",
+    version="1.0.dev0",
     description="btsf (for Binary Time Series File) is a package to store your data in a condensed and fast yet flexible way.",
     long_description=LDESC,
     author="Philipp Klaus",
