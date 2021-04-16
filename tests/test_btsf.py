@@ -16,7 +16,7 @@ def approx(*args, nan_ok=True, **kwargs):
     return pytest_approx(*args, nan_ok=nan_ok, **kwargs)
 
 
-DEFAULT_METRICS = [
+TYPICAL_METRICS = [
     Metric("time", MetricType.Double),
     Metric("power", MetricType.Float),
     Metric("counter", MetricType.UInt64),
@@ -83,7 +83,7 @@ def test_write_then_read():
 
     tf = tempfile.NamedTemporaryFile(suffix=".btsf")
 
-    with BinaryTimeSeriesFile.create(tf.name, DEFAULT_METRICS) as f:
+    with BinaryTimeSeriesFile.create(tf.name, TYPICAL_METRICS) as f:
         for t in VALID_TUPLES:
             f.append(*t)
         assert f.n_entries == len(VALID_TUPLES)
@@ -126,7 +126,7 @@ def test_write_then_read():
 
     # open the file again for appending (and reading)
     with BinaryTimeSeriesFile.openwrite(tf.name) as f:
-        assert f._metrics == DEFAULT_METRICS
+        assert f._metrics == TYPICAL_METRICS
 
         # append all data points again:
         for t in VALID_TUPLES:
@@ -143,7 +143,7 @@ def test_write_and_read_on_same_instance():
 
     tf = tempfile.NamedTemporaryFile(suffix=".btsf")
 
-    with BinaryTimeSeriesFile.create(tf.name, DEFAULT_METRICS) as f:
+    with BinaryTimeSeriesFile.create(tf.name, TYPICAL_METRICS) as f:
 
         # test proper creation and fundamental attributes
         assert f._byte_order == "<"
@@ -189,7 +189,7 @@ def test_invalid_further_intro():
     )
     with raises(InvalidIntroSection):
         f = BinaryTimeSeriesFile.create(
-            tf.name, DEFAULT_METRICS, intro_sections=[non_aligned_intro]
+            tf.name, TYPICAL_METRICS, intro_sections=[non_aligned_intro]
         )
 
 
@@ -211,7 +211,7 @@ def test_write_further_intro():
     )
     further_intro_sections = [annotation_intro]
     with BinaryTimeSeriesFile.create(
-        tf.name, DEFAULT_METRICS, intro_sections=further_intro_sections, pad_to=8
+        tf.name, TYPICAL_METRICS, intro_sections=further_intro_sections, pad_to=8
     ) as f:
         for t in VALID_TUPLES:
             f.append(*t)
