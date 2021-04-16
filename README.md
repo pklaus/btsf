@@ -28,13 +28,17 @@ concatenated packed structured data
 
 A typical use case for btfs is:
 
-* Data acquisition of a couple of variables, all sampled at the same time.
-* The same file can be opened again for appending to its end in case the acquisition has to be restarted.
-* A GUI to visualize the file's content can be used to annotate the time series and the annotations can be stored in the file.
+* Time series measurements of one or multiple variables (sampled at the same time).
+* Appending (=adding) new measurements to file is always possible, eg. after a restart of the acquisition.
+* The metadata of the file (stored in the intro sections of the file) can later be updated
+  with additional information, such as data annotations, tags or similar.
 
 What btfs is not suited for, at least not perfectly:
 
-* event-based data with varying number of values or varying value types
+* event-based data with varying number of values or varying value types.
+
+*Note: As the size of the introduction sections cannot be expanded, editing the metadata is only possible
+within the limits of reserved extra space for the intro section, specified when creating the file.*
 
 ### Installation
 
