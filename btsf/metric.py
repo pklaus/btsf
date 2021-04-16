@@ -6,6 +6,7 @@ __all__ = ["Metric", "MetricType"]
 
 
 class MetricType(enum.Enum):
+    # pylint:disable=bad-whitespace
     # fmt: off
     Float =  "f"
     Double = "d"

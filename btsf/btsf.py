@@ -1,6 +1,6 @@
 import json
 import struct
-from typing import List
+from typing import List, Union
 
 from .exceptions import *
 from .intro import *
@@ -16,7 +16,10 @@ class BinaryTimeSeriesFile:
 
     _chunksize = 256
 
-    # the factory methods at the module level, `create`, `openread` and `openwrite` should be used to create instances of this class.
+    # The factory methods at the module level:
+    # `create`, `openread` and `openwrite`
+    # should be used to create instances of
+    # this class, not __init__():
     def __init__(self, filename):
         self._fdname = filename
         self._fd = None
@@ -33,6 +36,7 @@ class BinaryTimeSeriesFile:
 
     @classmethod
     def _open(cls, filename, mode):
+        # pylint:disable=protected-access,attribute-defined-outside-init
         f = BinaryTimeSeriesFile(filename)
         f._fd = open(filename, mode)
         if not f._fd.read(32).startswith(cls.FILE_SIGNATURE):
@@ -108,6 +112,7 @@ class BinaryTimeSeriesFile:
         byte_order: str = "<",
         pad_to: int = 8,
     ):
+        # pylint:disable=protected-access
 
         if intro_sections:
             for intro_section in intro_sections:
@@ -269,21 +274,27 @@ class BinaryTimeSeriesFile:
         if output == "columns":
             return (a[name] for name in a.dtype.names)
 
-    def to_pandas(self, index_metric=None):
+    def to_pandas(self, index_metric: Union[Metric, str, int, None] = 0):
         """
-        index_metric: The metric that should become the index column
-            optional value 'time': the first column marked as time will be the index
+        index_metric: The metric that should become the index column.
+                      It can be specified by providing:
+                          * an instance of Metric()
+                          * a string representing the Metric's identifier
+                          * an integer specifying the zero-based metric's index
+                      By default, first metric will become the index column.
         """
         import pandas as pd
 
         a = self.to_numpy()
         df = pd.DataFrame.from_records(a)
         index_column_name = None
-        for m in self._metrics:
-            if m == index_metric or (index_metric == "time" and m.is_time):
+        for i, m in enumerate(self._metrics):
+            if type(index_metric) is Metric and m == index_metric or \
+               type(index_metric) is str and m.identifier == index_metric or \
+               type(index_metric) is int and i == index_metric:
                 index_column_name = m.identifier
                 break
-        if index_metric and not index_column_name:
+        if (index_metric is not None) and (not index_column_name):
             raise BtsfNameError("requested index metric not found in the data")
         if index_column_name:
             df.set_index(index_column_name, inplace=True)

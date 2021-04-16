@@ -53,7 +53,8 @@ def main():
     import argparse
 
     parser = argparse.ArgumentParser()
-    subparsers = parser.add_subparsers()
+    subparsers = parser.add_subparsers(dest="cmd")
+    subparsers.required = True
 
     info_parser = subparsers.add_parser("info")
     info_parser.add_argument(

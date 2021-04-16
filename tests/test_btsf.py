@@ -11,6 +11,8 @@ from btsf import InvalidIntroSection
 
 def approx(*args, nan_ok=True, **kwargs):
     """ custom variant of pytest.approx with nan_ok=True as default """
+    # Idea: change this custom variant to make it symmetric regarding the
+    # relative comparison...
     return pytest_approx(*args, nan_ok=nan_ok, **kwargs)
 
 
